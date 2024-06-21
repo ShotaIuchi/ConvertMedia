@@ -4,6 +4,11 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+data class ErrorInfo(
+    val fileName: String,
+    val errorMessage: String
+)
+
 class MyViewModel : ViewModel() {
     private val _totalFiles = MutableStateFlow(0)
     val totalFiles: StateFlow<Int> = _totalFiles
@@ -20,8 +25,8 @@ class MyViewModel : ViewModel() {
     private val _errorCount = MutableStateFlow(0)
     val errorCount: StateFlow<Int> = _errorCount
 
-    private val _errorMessages = MutableStateFlow<List<String>>(emptyList())
-    val errorMessages: StateFlow<List<String>> = _errorMessages
+    private val _errorMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
+    val errorMessages: StateFlow<List<ErrorInfo>> = _errorMessages
 
     fun updateTotalFiles(count: Int) {
         _totalFiles.value = count
@@ -43,7 +48,7 @@ class MyViewModel : ViewModel() {
         _errorCount.value += 1
     }
 
-    fun addErrorMessage(message: String) {
-        _errorMessages.value = _errorMessages.value + message
+    fun addErrorMessage(errorInfo: ErrorInfo) {
+        _errorMessages.value = _errorMessages.value + errorInfo
     }
 }

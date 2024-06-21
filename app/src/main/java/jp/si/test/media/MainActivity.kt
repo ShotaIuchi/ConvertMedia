@@ -74,10 +74,11 @@ class MainActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.height(16.dp))
                 ErrorSection(viewModel)
             }
-
-            if (isRunning) {
-                scope.launch {
-                    processFiles(viewModel)
+            LaunchedEffect(isRunning) {
+                if (isRunning) {
+                    scope.launch {
+                        processFiles(viewModel) { isRunning }
+                    }
                 }
             }
         }
@@ -114,47 +115,49 @@ class MainActivity : ComponentActivity() {
                     shape = RoundedCornerShape(1.dp)
                 ) {
                     Column(modifier = Modifier.padding(8.dp),) {
-                        Text(errorMessages[index], style = MaterialTheme.typography.bodyMedium)
+                        Text(errorMessages[index].fileName, style = MaterialTheme.typography.bodySmall)
+                        Text(errorMessages[index].errorMessage, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
         }
     }
 
+    private suspend fun processFiles(viewModel: MyViewModel, isRunning: () -> Boolean) {
+        val tasks = mutableListOf<Job>()
+        try {
+            withContext(Dispatchers.IO) {
+                val files = videoDir.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
+                viewModel.updateTotalFiles(files.size)
+                var fileIndex = 0
 
-    private suspend fun processFiles(viewModel: MyViewModel) {
-        withContext(Dispatchers.IO) {
-            val files = videoDir.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-            viewModel.updateTotalFiles(files.size)
-            var fileIndex = 0
-            val tasks = mutableListOf<Job>()
-
-            while (true) {
-                if (!isActive) break
-
-                if (tasks.size < maxTasks && files.isNotEmpty()) {
-                    val file = files[fileIndex % files.size]
-                    val outputFileName = generateOutputFileName(file.name)
-                    val job = launch {
-                        try {
-                            mediaConverter.convert(
-                                file.absolutePath,
-                                outputDir.resolve("$outputFileName.aac").absolutePath,
-                                outputDir.resolve("$outputFileName.mp4").absolutePath
-                            )
-                            updateCounts(file, viewModel)
-                        } catch (e: Exception) {
-                            viewModel.addErrorMessage("${file.name}: ${e.message}")
-                            viewModel.incrementErrorCount()
+                while (isRunning()) {
+                    if (tasks.size < maxTasks && files.isNotEmpty()) {
+                        val file = files[fileIndex % files.size]
+                        val outputFileName = generateOutputFileName(file.name)
+                        val job = launch {
+                            try {
+                                mediaConverter.convert(
+                                    file.absolutePath,
+                                    outputDir.resolve("$outputFileName.aac").absolutePath,
+                                    outputDir.resolve("$outputFileName.mp4").absolutePath
+                                )
+                                updateCounts(file, viewModel)
+                            } catch (e: Exception) {
+                                viewModel.addErrorMessage(ErrorInfo(file.name, e.message ?: "Unknown error"))
+                                viewModel.incrementErrorCount()
+                            }
                         }
+                        tasks.add(job)
+                        fileIndex++
                     }
-                    tasks.add(job)
-                    fileIndex++
-                }
 
-                tasks.removeAll { it.isCompleted }
-                delay(1000) // Adjust the delay as needed
+                    tasks.removeAll { it.isCompleted }
+                    delay(1000) // Adjust the delay as needed
+                }
             }
+        } finally {
+            tasks.forEach { it.cancelAndJoin() }
         }
     }
 
