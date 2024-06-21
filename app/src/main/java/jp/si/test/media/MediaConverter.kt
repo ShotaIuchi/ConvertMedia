@@ -12,7 +12,7 @@ class MediaConverter {
 
             if (hasAudio && hasVideo) {
                 AudioConverter().convert(inputFilePath, audioOutputFilePath)
-                VideoConverter().convert(inputFilePath, videoOutputFilePath)
+//                VideoConverter().convert(inputFilePath, videoOutputFilePath)
             } else if (hasAudio) {
                 AudioConverter().convert(inputFilePath, audioOutputFilePath)
             } else if (hasVideo) {

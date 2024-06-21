@@ -53,25 +53,27 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
 
         Scaffold() {
-            Column(modifier = Modifier.padding(4.dp)) {
+            Column(modifier = Modifier.padding(2.dp)) {
                 Row {
                     Button(
+                        shape = RoundedCornerShape(4.dp),
                         onClick = { isRunning = true },
                         enabled = !isRunning
                     ) {
                         Text("Start")
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
+                        shape = RoundedCornerShape(4.dp),
                         onClick = { isRunning = false },
                         enabled = isRunning
                     ) {
                         Text("Stop")
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 ProgressSection(viewModel)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 ErrorSection(viewModel)
             }
             LaunchedEffect(isRunning) {
@@ -92,12 +94,20 @@ class MainActivity : ComponentActivity() {
         val videoOnlyCount by viewModel.videoOnlyCount.collectAsState()
         val errorCount by viewModel.errorCount.collectAsState()
 
-        Column {
-            Text("Total Files: $totalFiles")
-            Text("Both (Audio & Video): $bothCount")
-            Text("Audio Only: $audioOnlyCount")
-            Text("Video Only: $videoOnlyCount")
-            Text("Errors: $errorCount")
+        Card(
+            modifier = Modifier
+                .padding(1.dp)
+                .fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.Black),
+            shape = RoundedCornerShape(1.dp)
+        ) {
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text("合計: $totalFiles", style = MaterialTheme.typography.bodySmall)
+                Text("音動: $bothCount", style = MaterialTheme.typography.bodySmall)
+                Text("音声: $audioOnlyCount", style = MaterialTheme.typography.bodySmall)
+                Text("動画: $videoOnlyCount", style = MaterialTheme.typography.bodySmall)
+                Text("失敗: $errorCount", style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 
@@ -128,7 +138,7 @@ class MainActivity : ComponentActivity() {
         try {
             withContext(Dispatchers.IO) {
                 val files = videoDir.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-                viewModel.updateTotalFiles(files.size)
+//                viewModel.updateTotalFiles(files.size)
                 var fileIndex = 0
 
                 while (isRunning()) {
@@ -142,10 +152,11 @@ class MainActivity : ComponentActivity() {
                                     outputDir.resolve("$outputFileName.aac").absolutePath,
                                     outputDir.resolve("$outputFileName.mp4").absolutePath
                                 )
-                                updateCounts(file, viewModel)
                             } catch (e: Exception) {
                                 viewModel.addErrorMessage(ErrorInfo(file.name, e.message ?: "Unknown error"))
                                 viewModel.incrementErrorCount()
+                            } finally {
+                                updateCounts(file, viewModel)
                             }
                         }
                         tasks.add(job)
