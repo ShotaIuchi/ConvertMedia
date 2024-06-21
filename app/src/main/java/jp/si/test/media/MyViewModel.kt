@@ -6,7 +6,11 @@ import kotlinx.coroutines.flow.StateFlow
 
 data class ErrorInfo(
     val fileName: String,
-    val errorMessage: String
+    val errorMessage: String,
+    val audioCodec: String,
+    val videoCodec: String,
+    val targetAudioCodec: String,
+    val targetVideoCodec: String,
 )
 
 class MyViewModel : ViewModel() {

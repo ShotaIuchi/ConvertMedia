@@ -1,8 +1,9 @@
 package jp.si.test.media
 
 import android.annotation.SuppressLint
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -16,7 +17,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -124,9 +124,23 @@ class MainActivity : ComponentActivity() {
                     border = BorderStroke(1.dp, Color.Black),
                     shape = RoundedCornerShape(1.dp)
                 ) {
-                    Column(modifier = Modifier.padding(8.dp),) {
-                        Text(errorMessages[index].fileName, style = MaterialTheme.typography.bodySmall)
-                        Text(errorMessages[index].errorMessage, style = MaterialTheme.typography.bodySmall)
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            errorMessages[index].fileName,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Text(
+                            "Audio: ${errorMessages[index].audioCodec} --> ${errorMessages[index].targetAudioCodec}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Video: ${errorMessages[index].videoCodec} --> ${errorMessages[index].targetVideoCodec}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            errorMessages[index].errorMessage,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
@@ -138,7 +152,6 @@ class MainActivity : ComponentActivity() {
         try {
             withContext(Dispatchers.IO) {
                 val files = videoDir.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-//                viewModel.updateTotalFiles(files.size)
                 var fileIndex = 0
 
                 while (isRunning()) {
@@ -153,7 +166,15 @@ class MainActivity : ComponentActivity() {
                                     outputDir.resolve("$outputFileName.mp4").absolutePath
                                 )
                             } catch (e: Exception) {
-                                viewModel.addErrorMessage(ErrorInfo(file.name, e.message ?: "Unknown error"))
+                                val errorInfo = ErrorInfo(
+                                    file.name,
+                                    e.message ?: "Unknown error",
+                                    audioCodec = getCodecInfo(file.absolutePath, "audio/"),
+                                    videoCodec = getCodecInfo(file.absolutePath, "video/"),
+                                    targetAudioCodec = "aac",
+                                    targetVideoCodec = "avc"
+                                )
+                                viewModel.addErrorMessage(errorInfo)
                                 viewModel.incrementErrorCount()
                             } finally {
                                 updateCounts(file, viewModel)
@@ -164,7 +185,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     tasks.removeAll { it.isCompleted }
-                    delay(1000) // Adjust the delay as needed
+                    delay(100)
                 }
             }
         } finally {
@@ -185,5 +206,20 @@ class MainActivity : ComponentActivity() {
             hasAudio -> viewModel.incrementAudioOnlyCount()
             hasVideo -> viewModel.incrementVideoOnlyCount()
         }
+    }
+
+    private fun getCodecInfo(filePath: String, mimePrefix: String): String {
+        val extractor = MediaExtractor()
+        extractor.setDataSource(filePath)
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME)
+            if (mime != null && mime.startsWith(mimePrefix)) {
+                extractor.release()
+                return mime.split("/").getOrNull(1) ?: ""
+            }
+        }
+        extractor.release()
+        return ""
     }
 }

@@ -4,18 +4,11 @@ import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.util.Log
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.ByteBuffer
 
 class AudioConverter : AbstractMediaConverter() {
-    companion object {
-        private const val OUTPUT_MIME_TYPE = "audio/mp4a-latm"
-        private const val OUTPUT_BIT_RATE = 128000
-        private const val OUTPUT_CHANNEL_COUNT = 2
-        private const val OUTPUT_SAMPLE_RATE_HZ = 44100
-    }
-
     @Throws(IOException::class)
     override fun setupExtractor(inputFilePath: String) {
         extractor = MediaExtractor()
@@ -30,17 +23,29 @@ class AudioConverter : AbstractMediaConverter() {
     @Throws(IOException::class)
     override fun setupDecoder() {
         val format = extractor.getTrackFormat(extractor.sampleTrackIndex)
-        decoder = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+        val codec = format.getString(MediaFormat.KEY_MIME)!!
+        decoder = MediaCodec.createDecoderByType(codec)
         decoder.configure(format, null, null, 0)
         decoder.start()
     }
 
     @Throws(IOException::class)
     override fun setupEncoder(outputFilePath: String) {
-        val format = MediaFormat.createAudioFormat(OUTPUT_MIME_TYPE, OUTPUT_SAMPLE_RATE_HZ, OUTPUT_CHANNEL_COUNT)
-        format.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_BIT_RATE)
-        format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-        encoder = MediaCodec.createEncoderByType(OUTPUT_MIME_TYPE)
+        val inputFormat = extractor.getTrackFormat(extractor.sampleTrackIndex)
+        val sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+        val channelCount = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+        val bitRate = inputFormat.getInteger(MediaFormat.KEY_BIT_RATE)
+
+        val format =
+            MediaFormat.createAudioFormat("audio/mp4a-latm", sampleRate, channelCount).apply {
+                setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
+                setInteger(
+                    MediaFormat.KEY_AAC_PROFILE,
+                    MediaCodecInfo.CodecProfileLevel.AACObjectLC
+                )
+            }
+
+        encoder = MediaCodec.createEncoderByType("audio/mp4a-latm")
         encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         encoder.start()
 
