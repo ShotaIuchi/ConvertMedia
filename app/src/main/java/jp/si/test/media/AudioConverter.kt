@@ -80,8 +80,6 @@ class AudioConverter : AbstractMediaConverter() {
             }
 
             if (bufferInfo.size != 0) {
-                outputBuffer.position(bufferInfo.offset)
-                outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
                 val decodedData = ByteArray(bufferInfo.size)
                 outputBuffer.get(decodedData)
                 outputBuffer.clear()

@@ -18,17 +18,22 @@ abstract class AbstractMediaConverter {
 
     @Throws(IOException::class)
     fun convert(inputFilePath: String, outputFilePath: String) {
-        setupExtractor(inputFilePath)
-        setupDecoder()
-        setupEncoder(outputFilePath)
+        try {
+            setupExtractor(inputFilePath)
+            setupDecoder()
+            setupEncoder(outputFilePath)
 
-        while (!sawOutputEOS) {
-            read()
-            decode()
-            encode()
+            while (!sawOutputEOS) {
+                read()
+                decode()
+                encode()
+            }
+        } catch (e: IOException) {
+            Log.e("AbstractMediaConverter", "Conversion failed: ${e.message}")
+            throw e
+        } finally {
+            cleanup()
         }
-
-        cleanup()
     }
 
     @Throws(IOException::class)
@@ -48,7 +53,12 @@ abstract class AbstractMediaConverter {
 
     @Throws(IOException::class)
     protected open fun cleanup() {
-        outputStream.close()
+        try {
+            outputStream.close()
+        } catch (e: IOException) {
+            Log.e("AbstractMediaConverter", "Failed to close output stream: ${e.message}")
+        }
+
         decoder.stop()
         decoder.release()
         encoder.stop()
