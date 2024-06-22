@@ -88,7 +88,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun ProgressSection(viewModel: MyViewModel) {
-        val totalFiles by viewModel.totalFiles.collectAsState()
+        val taskCount by viewModel.taskCount.collectAsState()
+        val totalCount by viewModel.totalCount.collectAsState()
         val bothCount by viewModel.bothCount.collectAsState()
         val audioOnlyCount by viewModel.audioOnlyCount.collectAsState()
         val videoOnlyCount by viewModel.videoOnlyCount.collectAsState()
@@ -102,7 +103,8 @@ class MainActivity : ComponentActivity() {
             shape = RoundedCornerShape(1.dp)
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
-                Text("合計: $totalFiles", style = MaterialTheme.typography.bodySmall)
+                Text("実行: $taskCount", style = MaterialTheme.typography.bodySmall)
+                Text("合計: $totalCount", style = MaterialTheme.typography.bodySmall)
                 Text("音動: $bothCount", style = MaterialTheme.typography.bodySmall)
                 Text("音声: $audioOnlyCount", style = MaterialTheme.typography.bodySmall)
                 Text("動画: $videoOnlyCount", style = MaterialTheme.typography.bodySmall)
@@ -185,6 +187,9 @@ class MainActivity : ComponentActivity() {
                     }
 
                     tasks.removeAll { it.isCompleted }
+
+                    viewModel.updateTaskCount(tasks.size)
+
                     delay(100)
                 }
             }

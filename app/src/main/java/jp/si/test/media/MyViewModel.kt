@@ -14,8 +14,11 @@ data class ErrorInfo(
 )
 
 class MyViewModel : ViewModel() {
-    private val _totalFiles = MutableStateFlow(0)
-    val totalFiles: StateFlow<Int> = _totalFiles
+    private val _taskCount = MutableStateFlow(0)
+    val taskCount: StateFlow<Int> = _taskCount
+
+    private val _totalCount = MutableStateFlow(0)
+    val totalCount: StateFlow<Int> = _totalCount
 
     private val _bothCount = MutableStateFlow(0)
     val bothCount: StateFlow<Int> = _bothCount
@@ -32,19 +35,23 @@ class MyViewModel : ViewModel() {
     private val _errorMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
     val errorMessages: StateFlow<List<ErrorInfo>> = _errorMessages
 
+    fun updateTaskCount(count:Int) {
+        _taskCount.value = count
+    }
+
     fun incrementBothCount() {
         _bothCount.value += 1
-        _totalFiles.value += 1
+        _totalCount.value += 1
     }
 
     fun incrementAudioOnlyCount() {
         _audioOnlyCount.value += 1
-        _totalFiles.value += 1
+        _totalCount.value += 1
     }
 
     fun incrementVideoOnlyCount() {
         _videoOnlyCount.value += 1
-        _totalFiles.value += 1
+        _totalCount.value += 1
     }
 
     fun incrementErrorCount() {
