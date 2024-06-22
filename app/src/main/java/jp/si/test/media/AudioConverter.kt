@@ -58,7 +58,7 @@ class AudioConverter : AbstractMediaConverter() {
             if (inputBufferIndex >= 0) {
                 val inputBuffer = decoder.getInputBuffer(inputBufferIndex)!!
                 val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                if (sampleSize < 0) {
+                if (sampleSize <= 0) {
                     decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                     sawInputEOS = true
                 } else {
@@ -92,6 +92,17 @@ class AudioConverter : AbstractMediaConverter() {
                     encoder.queueInputBuffer(inputBufferIndex, 0, decodedData.size, bufferInfo.presentationTimeUs, bufferInfo.flags)
                 }
             }
+
+            // エンコーダへの終了フラグ設定
+            if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                val inputBufferIndex = encoder.dequeueInputBuffer(10000)
+                if (inputBufferIndex >= 0) {
+                    val inputBuffer = encoder.getInputBuffer(inputBufferIndex)!!
+                    inputBuffer.clear()
+                    encoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                }
+            }
+
             decoder.releaseOutputBuffer(outputBufferIndex, false)
         }
     }
