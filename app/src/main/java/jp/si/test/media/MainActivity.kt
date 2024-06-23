@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -12,14 +11,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -54,37 +48,87 @@ class MainActivity : ComponentActivity() {
         var isRunning by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
-        Scaffold() {
-            Column(modifier = Modifier.padding(2.dp)) {
-                Row {
-                    Button(
-                        shape = RoundedCornerShape(4.dp),
-                        onClick = { isRunning = true },
-                        enabled = !isRunning
-                    ) {
-                        Text("Start")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        shape = RoundedCornerShape(4.dp),
-                        onClick = { isRunning = false },
-                        enabled = isRunning
-                    ) {
-                        Text("Stop")
+        var selectedAudioCodec by remember { mutableStateOf("mp4a-latm") }
+        var selectedVideoCodec by remember { mutableStateOf("avc") }
+
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+        ModalNavigationDrawer(
+            drawerContent = {
+                ModalDrawerSheet {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Select Audio Codec")
+                        CodecSelection(
+                            options = listOf("mp4a-latm", "aac", "opus"),
+                            selectedCodec = selectedAudioCodec,
+                            onCodecSelected = { selectedAudioCodec = it }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Select Video Codec")
+                        CodecSelection(
+                            options = listOf("avc", "hevc", "vp9"),
+                            selectedCodec = selectedVideoCodec,
+                            onCodecSelected = { selectedVideoCodec = it }
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                ProgressSection(viewModel)
-                Spacer(modifier = Modifier.height(2.dp))
-                ActiveSection(viewModel)
-                Spacer(modifier = Modifier.height(2.dp))
-                ErrorSection(viewModel)
+            },
+            drawerState = drawerState
+        ) {
+            Scaffold {
+                Column(modifier = Modifier.padding(2.dp)) {
+                    Row {
+                        Button(
+                            shape = RoundedCornerShape(4.dp),
+                            onClick = { scope.launch { drawerState.open() } }
+                        ) {
+                            Text("Codec")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            shape = RoundedCornerShape(4.dp),
+                            onClick = { isRunning = true },
+                            enabled = !isRunning
+                        ) {
+                            Text("Start")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            shape = RoundedCornerShape(4.dp),
+                            onClick = { isRunning = false },
+                            enabled = isRunning
+                        ) {
+                            Text("Stop")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    ProgressSection(viewModel)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    ActiveSection(viewModel)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    ErrorSection(viewModel)
+                }
             }
             LaunchedEffect(isRunning) {
                 if (isRunning) {
                     scope.launch {
-                        processFiles(viewModel) { isRunning }
+                        processFiles(viewModel, selectedAudioCodec, selectedVideoCodec) { isRunning }
                     }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun CodecSelection(options: List<String>, selectedCodec: String, onCodecSelected: (String) -> Unit) {
+        Column {
+            options.forEach { option ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = selectedCodec == option,
+                        onClick = { onCodecSelected(option) }
+                    )
+                    Text(option)
                 }
             }
         }
@@ -191,7 +235,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun processFiles(viewModel: MyViewModel, isRunning: () -> Boolean) {
+    private suspend fun processFiles(viewModel: MyViewModel, audioCodec: String, videoCodec: String, isRunning: () -> Boolean) {
         val tasks = mutableListOf<Job>()
         try {
             withContext(Dispatchers.IO) {
@@ -209,8 +253,8 @@ class MainActivity : ComponentActivity() {
                                 file.name,
                                 audioCodec = getCodecInfo(file.absolutePath, "audio/"),
                                 videoCodec = getCodecInfo(file.absolutePath, "video/"),
-                                targetAudioCodec = "mp4a-latm",
-                                targetVideoCodec = "avc",
+                                targetAudioCodec = audioCodec,
+                                targetVideoCodec = videoCodec,
                             )
                             try {
                                 viewModel.addActiveMessage(convertInfo)
