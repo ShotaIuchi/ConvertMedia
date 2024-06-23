@@ -168,9 +168,10 @@ class MainActivity : ComponentActivity() {
                                     outputDir.resolve("$outputFileName.mp4").absolutePath
                                 )
                             } catch (e: Exception) {
+                                e.printStackTrace()
                                 val errorInfo = ErrorInfo(
                                     file.name,
-                                    e.message ?: "Unknown error",
+                                    e.message ?: e.javaClass.name,
                                     audioCodec = getCodecInfo(file.absolutePath, "audio/"),
                                     videoCodec = getCodecInfo(file.absolutePath, "video/"),
                                     targetAudioCodec = "aac",
