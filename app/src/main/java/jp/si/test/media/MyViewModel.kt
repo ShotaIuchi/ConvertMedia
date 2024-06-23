@@ -4,14 +4,14 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-data class ErrorInfo(
+data class ConvertInfo(
     val id: Int,
     val fileName: String,
     val audioCodec: String,
     val videoCodec: String,
     val targetAudioCodec: String,
     val targetVideoCodec: String,
-    val errorMessage: String = "",
+    var errorMessage: String = "",
 )
 
 class MyViewModel : ViewModel() {
@@ -36,11 +36,11 @@ class MyViewModel : ViewModel() {
     private val _errorCount = MutableStateFlow(0)
     val errorCount: StateFlow<Int> = _errorCount
 
-    private val _activeMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
-    val activeMessages: StateFlow<List<ErrorInfo>> = _activeMessages
+    private val _activeMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
+    val activeMessages: StateFlow<List<ConvertInfo>> = _activeMessages
 
-    private val _errorMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
-    val errorMessages: StateFlow<List<ErrorInfo>> = _errorMessages
+    private val _errorMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
+    val errorMessages: StateFlow<List<ConvertInfo>> = _errorMessages
 
     fun updateTaskCount(count:Int) {
         _taskCount.value = count
@@ -69,7 +69,7 @@ class MyViewModel : ViewModel() {
         _errorCount.value += 1
     }
 
-    fun addActiveMessage(activeInfo: ErrorInfo) {
+    fun addActiveMessage(activeInfo: ConvertInfo) {
         _activeMessages.value = _activeMessages.value + activeInfo
     }
 
@@ -77,7 +77,7 @@ class MyViewModel : ViewModel() {
         _activeMessages.value = _activeMessages.value.filter { it.id != activeInfoId }
     }
 
-    fun addErrorMessage(errorInfo: ErrorInfo) {
+    fun addErrorMessage(errorInfo: ConvertInfo) {
         _errorMessages.value = _errorMessages.value + errorInfo
     }
 }
