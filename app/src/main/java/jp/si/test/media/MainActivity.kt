@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -201,8 +202,7 @@ class MainActivity : ComponentActivity() {
                     if (tasks.size < maxTasks && files.isNotEmpty()) {
                         val file = files[fileIndex % files.size]
                         val job = launch {
-                            viewModel.incrementTotalCount()
-                            val index = viewModel.totalCount.value
+                            val index = viewModel.incrementTotalCount()
                             val outputFileName = generateOutputFileName(file.name, index)
                             val convertInfo = ConvertInfo(
                                 index,
@@ -233,11 +233,8 @@ class MainActivity : ComponentActivity() {
                         tasks.add(job)
                         fileIndex++
                     }
-
                     tasks.removeAll { it.isCompleted }
-
                     viewModel.updateTaskCount(tasks.size)
-
                     delay(100)
                 }
             }

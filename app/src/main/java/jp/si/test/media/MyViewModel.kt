@@ -46,8 +46,9 @@ class MyViewModel : ViewModel() {
         _taskCount.value = count
     }
 
-    fun incrementTotalCount() {
+    fun incrementTotalCount(): Int {
         _totalCount.value += 1
+        return _totalCount.value
     }
 
     fun incrementBothCount() {
