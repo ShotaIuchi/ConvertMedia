@@ -145,6 +145,8 @@ abstract class AbstractMediaConverter {
             }
 
             encoder.releaseOutputBuffer(outputBufferIndex, false)
+        } else {
+            sawOutputEOS = sawInputEOS
         }
     }
 

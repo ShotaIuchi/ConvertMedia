@@ -5,12 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 data class ErrorInfo(
+    val id: Int,
     val fileName: String,
-    val errorMessage: String,
     val audioCodec: String,
     val videoCodec: String,
     val targetAudioCodec: String,
     val targetVideoCodec: String,
+    val errorMessage: String = "",
 )
 
 class MyViewModel : ViewModel() {
@@ -19,6 +20,9 @@ class MyViewModel : ViewModel() {
 
     private val _totalCount = MutableStateFlow(0)
     val totalCount: StateFlow<Int> = _totalCount
+
+    private val _allCount = MutableStateFlow(0)
+    val allCount: StateFlow<Int> = _allCount
 
     private val _bothCount = MutableStateFlow(0)
     val bothCount: StateFlow<Int> = _bothCount
@@ -32,6 +36,9 @@ class MyViewModel : ViewModel() {
     private val _errorCount = MutableStateFlow(0)
     val errorCount: StateFlow<Int> = _errorCount
 
+    private val _activeMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
+    val activeMessages: StateFlow<List<ErrorInfo>> = _activeMessages
+
     private val _errorMessages = MutableStateFlow<List<ErrorInfo>>(emptyList())
     val errorMessages: StateFlow<List<ErrorInfo>> = _errorMessages
 
@@ -39,23 +46,35 @@ class MyViewModel : ViewModel() {
         _taskCount.value = count
     }
 
+    fun incrementTotalCount() {
+        _totalCount.value += 1
+    }
+
     fun incrementBothCount() {
         _bothCount.value += 1
-        _totalCount.value += 1
+        _allCount.value += 1
     }
 
     fun incrementAudioOnlyCount() {
         _audioOnlyCount.value += 1
-        _totalCount.value += 1
+        _allCount.value += 1
     }
 
     fun incrementVideoOnlyCount() {
         _videoOnlyCount.value += 1
-        _totalCount.value += 1
+        _allCount.value += 1
     }
 
     fun incrementErrorCount() {
         _errorCount.value += 1
+    }
+
+    fun addActiveMessage(activeInfo: ErrorInfo) {
+        _activeMessages.value = _activeMessages.value + activeInfo
+    }
+
+    fun removeActiveMassage(activeInfoId: Int) {
+        _activeMessages.value = _activeMessages.value.filter { it.id != activeInfoId }
     }
 
     fun addErrorMessage(errorInfo: ErrorInfo) {
