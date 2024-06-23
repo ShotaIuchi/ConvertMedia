@@ -204,19 +204,23 @@ class MainActivity : ComponentActivity() {
                             viewModel.incrementTotalCount()
                             val index = viewModel.totalCount.value
                             val outputFileName = generateOutputFileName(file.name, index)
+                            val targetAudioCodec = "aac"//"aac"
+                            val targetVideoCodec = "avc"
                             try {
                                 viewModel.addActiveMessage(ErrorInfo(
                                     index,
                                     file.name,
                                     audioCodec = getCodecInfo(file.absolutePath, "audio/"),
                                     videoCodec = getCodecInfo(file.absolutePath, "video/"),
-                                    targetAudioCodec = "aac",
-                                    targetVideoCodec = "avc",
+                                    targetAudioCodec = targetAudioCodec,
+                                    targetVideoCodec = targetVideoCodec,
                                 ))
                                 mediaConverter.convert(
                                     file.absolutePath,
                                     outputDir.resolve("$outputFileName.aac").absolutePath,
-                                    outputDir.resolve("$outputFileName.mp4").absolutePath
+                                    outputDir.resolve("$outputFileName.mp4").absolutePath,
+                                    EncodeOption(targetAudioCodec),
+                                    EncodeOption(targetVideoCodec),
                                 )
                             } catch (e: Exception) {
                                 viewModel.addErrorMessage(ErrorInfo(
@@ -224,8 +228,8 @@ class MainActivity : ComponentActivity() {
                                     file.name,
                                     audioCodec = getCodecInfo(file.absolutePath, "audio/"),
                                     videoCodec = getCodecInfo(file.absolutePath, "video/"),
-                                    targetAudioCodec = "aac",
-                                    targetVideoCodec = "avc",
+                                    targetAudioCodec = targetAudioCodec,
+                                    targetVideoCodec = targetVideoCodec,
                                     e.message ?: e.javaClass.name,
                                 ))
                                 viewModel.incrementErrorCount()

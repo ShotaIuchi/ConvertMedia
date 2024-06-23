@@ -8,7 +8,15 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 
-abstract class AbstractMediaConverter {
+data class EncodeOption(
+    val codec: String
+)
+
+abstract class AbstractMediaConverter(
+    protected val inputFilePath: String,
+    protected val outputFilePath: String,
+    protected val encodeOption: EncodeOption,
+) {
     protected lateinit var extractor: MediaExtractor
     protected lateinit var decoder: MediaCodec
     protected lateinit var encoder: MediaCodec
@@ -17,11 +25,11 @@ abstract class AbstractMediaConverter {
     private var sawOutputEOS = false
 
     @Throws(IOException::class)
-    fun convert(inputFilePath: String, outputFilePath: String) {
+    fun convert() {
         try {
-            setupExtractor(inputFilePath)
+            setupExtractor()
             setupDecoder()
-            setupEncoder(outputFilePath)
+            setupEncoder()
 
             while (!sawOutputEOS) {
                 read()
@@ -40,13 +48,13 @@ abstract class AbstractMediaConverter {
     }
 
     @Throws(IOException::class)
-    protected abstract fun setupExtractor(inputFilePath: String)
+    protected abstract fun setupExtractor()
 
     @Throws(IOException::class)
     protected abstract fun setupDecoder()
 
     @Throws(IOException::class)
-    protected abstract fun setupEncoder(outputFilePath: String)
+    protected abstract fun setupEncoder()
 
     private fun read() {
         if (!sawInputEOS) {

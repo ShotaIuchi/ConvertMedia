@@ -8,9 +8,14 @@ import android.util.Log
 import java.io.FileOutputStream
 import java.io.IOException
 
-class AudioConverter : AbstractMediaConverter() {
+class AudioConverter(
+    inputFilePath: String,
+    outputFilePath: String,
+    encodeOption: EncodeOption,
+) : AbstractMediaConverter(inputFilePath, outputFilePath, encodeOption) {
+
     @Throws(IOException::class)
-    override fun setupExtractor(inputFilePath: String) {
+    override fun setupExtractor() {
         extractor = MediaExtractor()
         extractor.setDataSource(inputFilePath)
         val trackIndex = selectTrack(extractor, "audio/")
@@ -30,14 +35,14 @@ class AudioConverter : AbstractMediaConverter() {
     }
 
     @Throws(IOException::class)
-    override fun setupEncoder(outputFilePath: String) {
+    override fun setupEncoder() {
         val inputFormat = extractor.getTrackFormat(extractor.sampleTrackIndex)
         val sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
         val channelCount = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
         val bitRate = inputFormat.getInteger(MediaFormat.KEY_BIT_RATE)
 
         val format =
-            MediaFormat.createAudioFormat("audio/mp4a-latm", sampleRate, channelCount).apply {
+            MediaFormat.createAudioFormat("audio/${encodeOption.codec}", sampleRate, channelCount).apply {
                 setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
                 setInteger(
                     MediaFormat.KEY_AAC_PROFILE,
@@ -45,7 +50,7 @@ class AudioConverter : AbstractMediaConverter() {
                 )
             }
 
-        encoder = MediaCodec.createEncoderByType("audio/mp4a-latm")
+        encoder = MediaCodec.createEncoderByType("audio/${encodeOption.codec}")
         encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         encoder.start()
 

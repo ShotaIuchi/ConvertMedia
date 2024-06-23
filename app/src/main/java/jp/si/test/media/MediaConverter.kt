@@ -5,18 +5,24 @@ import android.media.MediaFormat
 import java.io.IOException
 
 class MediaConverter {
-    fun convert(inputFilePath: String, audioOutputFilePath: String, videoOutputFilePath: String) {
+    fun convert(
+        inputFilePath: String,
+        audioOutputFilePath: String,
+        videoOutputFilePath: String,
+        audioEncodeOption: EncodeOption,
+        videoEncodeOption: EncodeOption
+    ) {
         try {
             val hasAudio = hasTrack(inputFilePath, "audio/")
             val hasVideo = hasTrack(inputFilePath, "video/")
 
             if (hasAudio && hasVideo) {
-                AudioConverter().convert(inputFilePath, audioOutputFilePath)
-                VideoConverter().convert(inputFilePath, videoOutputFilePath)
+                AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
+                VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
             } else if (hasAudio) {
-                AudioConverter().convert(inputFilePath, audioOutputFilePath)
+                AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
             } else if (hasVideo) {
-                VideoConverter().convert(inputFilePath, videoOutputFilePath)
+                VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
             } else {
                 throw RuntimeException("ファイルに音声トラックも動画トラックもありません。")
             }
