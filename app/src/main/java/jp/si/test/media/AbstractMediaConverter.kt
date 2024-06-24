@@ -8,6 +8,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 abstract class EncodeOption {
+    public abstract val name: String
+
     abstract fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat
 
     protected fun applyInteger(format: MediaFormat, input: MediaFormat, key: String, value: Int?, default: Int) {
