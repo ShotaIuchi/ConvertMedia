@@ -137,10 +137,13 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ProgressSection(viewModel: MyViewModel) {
         val taskCount by viewModel.taskCount.collectAsState()
-        val totalCount by viewModel.allCount.collectAsState()
+        val totalCount by viewModel.totalTaskCount.collectAsState()
+        val allCount by viewModel.allCount.collectAsState()
         val bothCount by viewModel.bothCount.collectAsState()
         val audioOnlyCount by viewModel.audioOnlyCount.collectAsState()
         val videoOnlyCount by viewModel.videoOnlyCount.collectAsState()
+        val noneCount by viewModel.noneCount.collectAsState()
+        val successCount by viewModel.successCount.collectAsState()
         val errorCount by viewModel.errorCount.collectAsState()
 
         Card(
@@ -151,12 +154,9 @@ class MainActivity : ComponentActivity() {
             shape = RoundedCornerShape(1.dp)
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
-                Text("実行: $taskCount", style = MaterialTheme.typography.bodySmall)
-                Text("合計: $totalCount", style = MaterialTheme.typography.bodySmall)
-                Text("音動: $bothCount", style = MaterialTheme.typography.bodySmall)
-                Text("音声: $audioOnlyCount", style = MaterialTheme.typography.bodySmall)
-                Text("動画: $videoOnlyCount", style = MaterialTheme.typography.bodySmall)
-                Text("失敗: $errorCount", style = MaterialTheme.typography.bodySmall)
+                Text("実行中: $taskCount - 実行数: $totalCount", style = MaterialTheme.typography.bodySmall)
+                Text("合計: $allCount - 動画: $bothCount - 音声: $audioOnlyCount - 画像: $videoOnlyCount - なし: $noneCount", style = MaterialTheme.typography.bodySmall)
+                Text("成功: $successCount - 失敗: $errorCount - 無視: $noneCount", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -182,11 +182,11 @@ class MainActivity : ComponentActivity() {
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Audio: ${activeMessages[index].audioCodec} --> ${activeMessages[index].targetAudioCodec}",
+                                "Audio: ${activeMessages[index].audioCodec} --> ${activeMessages[index].audioEncodeOption}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
-                                "Video: ${activeMessages[index].videoCodec} --> ${activeMessages[index].targetVideoCodec}",
+                                "Video: ${activeMessages[index].videoCodec} --> ${activeMessages[index].videoEncodeOption}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -217,11 +217,11 @@ class MainActivity : ComponentActivity() {
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Audio: ${message.audioCodec} --> ${message.targetAudioCodec}",
+                                "Audio: ${message.audioCodec} --> ${message.audioEncodeOption}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
-                                "Video: ${message.videoCodec} --> ${message.targetVideoCodec}",
+                                "Video: ${message.videoCodec} --> ${message.videoEncodeOption}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
@@ -246,15 +246,15 @@ class MainActivity : ComponentActivity() {
                     if (tasks.size < maxTasks && files.isNotEmpty()) {
                         val file = files[fileIndex % files.size]
                         val job = launch {
-                            val index = viewModel.incrementTotalCount()
+                            val index = viewModel.incrementTotalTaskCount()
                             val outputFileName = generateOutputFileName(file.name, index)
                             val convertInfo = ConvertInfo(
                                 index,
                                 file.name,
                                 audioCodec = getCodecInfo(file.absolutePath, "audio/"),
                                 videoCodec = getCodecInfo(file.absolutePath, "video/"),
-                                targetAudioCodec = audioCodec,
-                                targetVideoCodec = videoCodec,
+                                audioEncodeOption = AudioEncodeOptionAAC(),
+                                videoEncodeOption = VideoEncodeOptionAVC(),
                             )
                             try {
                                 viewModel.addActiveMessage(convertInfo)
@@ -262,8 +262,8 @@ class MainActivity : ComponentActivity() {
                                     file.absolutePath,
                                     outputDir.resolve("$outputFileName.aac").absolutePath,
                                     outputDir.resolve("$outputFileName.avc").absolutePath,
-                                    EncodeOption(convertInfo.targetAudioCodec),
-                                    EncodeOption(convertInfo.targetVideoCodec),
+                                    convertInfo.audioEncodeOption,
+                                    convertInfo.videoEncodeOption,
                                 )
                             } catch (e: Exception) {
                                 convertInfo.errorMessage = e.message ?: e.javaClass.name
@@ -299,6 +299,7 @@ class MainActivity : ComponentActivity() {
             hasAudio && hasVideo -> viewModel.incrementBothCount()
             hasAudio -> viewModel.incrementAudioOnlyCount()
             hasVideo -> viewModel.incrementVideoOnlyCount()
+            else -> viewModel.incrementNoneCount()
         }
     }
 

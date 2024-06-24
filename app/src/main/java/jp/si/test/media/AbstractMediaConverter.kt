@@ -6,21 +6,29 @@ import android.media.MediaFormat
 import android.util.Log
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.ByteBuffer
 
-data class EncodeOption(
-    val codec: String
-)
+abstract class EncodeOption {
+    abstract fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat
+
+    protected fun applyInteger(format: MediaFormat, input: MediaFormat, key: String, value: Int?, default: Int) {
+        if (null != value) {
+            format.setInteger(key, value)
+        } else {
+            format.setInteger(key, input.getInteger(key, default))
+        }
+    }
+}
 
 abstract class AbstractMediaConverter(
-    protected val inputFilePath: String,
-    protected val outputFilePath: String,
-    protected val encodeOption: EncodeOption,
+    private val inputFilePath: String,
+    private val outputFilePath: String,
+    private val encode: EncodeOption,
 ) {
-    protected lateinit var extractor: MediaExtractor
-    protected lateinit var decoder: MediaCodec
-    protected lateinit var encoder: MediaCodec
-    protected lateinit var outputStream: FileOutputStream
+    private lateinit var extractor: MediaExtractor
+    private lateinit var decoder: MediaCodec
+    private lateinit var encoder: MediaCodec
+    private lateinit var outputStream: FileOutputStream
+
     private var sawInputEOS = false
     private var sawOutputEOS = false
 
@@ -30,15 +38,12 @@ abstract class AbstractMediaConverter(
             setupExtractor()
             setupDecoder()
             setupEncoder()
-
+            setupOutStream()
             while (!sawOutputEOS) {
                 read()
                 decode()
                 encode()
             }
-        } catch (e: IOException) {
-            Log.e("AbstractMediaConverter", "Conversion failed: ${e.message}")
-            throw e
         } catch (e: Exception) {
             Log.e("AbstractMediaConverter", "Conversion failed: ${e.message}")
             throw e
@@ -47,15 +52,41 @@ abstract class AbstractMediaConverter(
         }
     }
 
-    @Throws(IOException::class)
-    protected abstract fun setupExtractor()
+    @Throws(Exception::class)
+    fun setupExtractor() {
+        extractor = MediaExtractor()
+        extractor.setDataSource(inputFilePath)
+        val trackIndex = selectTrack(extractor)
+        if (trackIndex == -1) {
+            throw RuntimeException("Not found track")
+        }
+        extractor.selectTrack(trackIndex)
+    }
 
-    @Throws(IOException::class)
-    protected abstract fun setupDecoder()
+    @Throws(Exception::class)
+    fun setupDecoder() {
+        val format = extractor.getTrackFormat(extractor.sampleTrackIndex)
+        val codec = format.getString(MediaFormat.KEY_MIME)!!
+        decoder = MediaCodec.createDecoderByType(codec)
+        decoder.configure(format, null, null, 0)
+        decoder.start()
+    }
 
-    @Throws(IOException::class)
-    protected abstract fun setupEncoder()
+    @Throws(Exception::class)
+    fun setupEncoder() {
+        val format = encode.createEncodeFormat(extractor.getTrackFormat(extractor.sampleTrackIndex))
+        val codec = format.getString(MediaFormat.KEY_MIME)!!
+        encoder = MediaCodec.createEncoderByType(codec)
+        encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        encoder.start()
+    }
 
+    @Throws(Exception::class)
+    fun setupOutStream() {
+        outputStream = FileOutputStream(outputFilePath)
+    }
+
+    @Throws(Exception::class)
     private fun read() {
         if (!sawInputEOS) {
             val inputBufferIndex = decoder.dequeueInputBuffer(10000)
@@ -73,6 +104,7 @@ abstract class AbstractMediaConverter(
         }
     }
 
+    @Throws(Exception::class)
     private fun decode() {
         val bufferInfo = MediaCodec.BufferInfo()
         val outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 10000)
@@ -109,7 +141,6 @@ abstract class AbstractMediaConverter(
                 }
             }
 
-            // エンコーダへの終了フラグ設定
             if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                 val inputBufferIndex = encoder.dequeueInputBuffer(10000)
                 if (inputBufferIndex >= 0) {
@@ -123,7 +154,7 @@ abstract class AbstractMediaConverter(
         }
     }
 
-    @Throws(IOException::class)
+    @Throws(Exception::class)
     private fun encode() {
         val bufferInfo = MediaCodec.BufferInfo()
         val outputBufferIndex = encoder.dequeueOutputBuffer(bufferInfo, 10000)
@@ -169,6 +200,8 @@ abstract class AbstractMediaConverter(
         }
         return -1
     }
+
+    abstract fun selectTrack(extractor: MediaExtractor): Int
 
     @Throws(IOException::class)
     protected open fun cleanup() {

@@ -1,28 +1,33 @@
 package jp.si.test.media
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 data class ConvertInfo(
     val id: Int,
     val fileName: String,
     val audioCodec: String,
     val videoCodec: String,
-    val targetAudioCodec: String,
-    val targetVideoCodec: String,
+    val audioEncodeOption: AudioEncodeOption,
+    val videoEncodeOption: VideoEncodeOption,
     var errorMessage: String = "",
 )
 
 class MyViewModel : ViewModel() {
+    private val scope = CoroutineScope(Dispatchers.Default)
+
     private val _taskCount = MutableStateFlow(0)
     val taskCount: StateFlow<Int> = _taskCount
 
-    private val _totalCount = MutableStateFlow(0)
-    val totalCount: StateFlow<Int> = _totalCount
-
-    private val _allCount = MutableStateFlow(0)
-    val allCount: StateFlow<Int> = _allCount
+    private val _totalTaskCount = MutableStateFlow(0)
+    val totalTaskCount: StateFlow<Int> = _totalTaskCount
 
     private val _bothCount = MutableStateFlow(0)
     val bothCount: StateFlow<Int> = _bothCount
@@ -33,8 +38,19 @@ class MyViewModel : ViewModel() {
     private val _videoOnlyCount = MutableStateFlow(0)
     val videoOnlyCount: StateFlow<Int> = _videoOnlyCount
 
+    private val _noneCount = MutableStateFlow(0)
+    val noneCount: StateFlow<Int> = _noneCount
+
     private val _errorCount = MutableStateFlow(0)
     val errorCount: StateFlow<Int> = _errorCount
+
+    val allCount: StateFlow<Int> = combine(bothCount, audioOnlyCount, videoOnlyCount, noneCount) { bothCount, audioOnlyCount, videoOnlyCount, noneCount ->
+        bothCount + audioOnlyCount + videoOnlyCount + noneCount
+    }.stateIn(scope, SharingStarted.Eagerly, 0)
+
+    val successCount: StateFlow<Int> = combine(allCount, errorCount, noneCount) { allCount, errorCount, noneCount ->
+        allCount - errorCount - noneCount
+    }.stateIn(scope, SharingStarted.Eagerly, 0)
 
     private val _activeMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
     val activeMessages: StateFlow<List<ConvertInfo>> = _activeMessages
@@ -46,24 +62,25 @@ class MyViewModel : ViewModel() {
         _taskCount.value = count
     }
 
-    fun incrementTotalCount(): Int {
-        _totalCount.value += 1
-        return _totalCount.value
+    fun incrementTotalTaskCount(): Int {
+        _totalTaskCount.value += 1
+        return _totalTaskCount.value
     }
 
     fun incrementBothCount() {
         _bothCount.value += 1
-        _allCount.value += 1
     }
 
     fun incrementAudioOnlyCount() {
         _audioOnlyCount.value += 1
-        _allCount.value += 1
     }
 
     fun incrementVideoOnlyCount() {
         _videoOnlyCount.value += 1
-        _allCount.value += 1
+    }
+
+    fun incrementNoneCount() {
+        _noneCount.value += 1
     }
 
     fun incrementErrorCount() {

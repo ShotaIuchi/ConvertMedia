@@ -9,25 +9,21 @@ class MediaConverter {
         inputFilePath: String,
         audioOutputFilePath: String,
         videoOutputFilePath: String,
-        audioEncodeOption: EncodeOption,
-        videoEncodeOption: EncodeOption
+        audioEncodeOption: AudioEncodeOption,
+        videoEncodeOption: VideoEncodeOption
     ) {
-        try {
-            val hasAudio = hasTrack(inputFilePath, "audio/")
-            val hasVideo = hasTrack(inputFilePath, "video/")
+        val hasAudio = hasTrack(inputFilePath, "audio/")
+        val hasVideo = hasTrack(inputFilePath, "video/")
 
-            if (hasAudio && hasVideo) {
-                AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
-                VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
-            } else if (hasAudio) {
-                AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
-            } else if (hasVideo) {
-                VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
-            } else {
-                throw RuntimeException("ファイルに音声トラックも動画トラックもありません。")
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
+        if (hasAudio && hasVideo) {
+            AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
+            VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
+        } else if (hasAudio) {
+            AudioConverter(inputFilePath, audioOutputFilePath, audioEncodeOption).convert()
+        } else if (hasVideo) {
+            VideoConverter(inputFilePath, videoOutputFilePath, videoEncodeOption).convert()
+        } else {
+            // データなし
         }
     }
 
