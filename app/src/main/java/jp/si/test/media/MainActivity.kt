@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyApp() {
         val viewModel: MyViewModel = viewModel()
+        val convertViewModel: ConverterViewModel = viewModel()
         var isRunning by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
 
         val drawerState = rememberDrawerState(DrawerValue.Closed)
 
+        val x = convertViewModel.audioEncodeOptions.value
         ModalNavigationDrawer(
             drawerContent = {
                 ModalDrawerSheet {

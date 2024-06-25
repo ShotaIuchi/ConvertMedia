@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import java.util.Date
 
 data class ConvertInfo(
     val id: Int,
@@ -18,7 +19,17 @@ data class ConvertInfo(
     val audioEncodeOption: AudioEncodeOption,
     val videoEncodeOption: VideoEncodeOption,
     var errorMessage: String = "",
+) {
+    val hash = "$fileName,$audioCodec,${audioEncodeOption.name},$videoCodec,${videoEncodeOption.name},$errorMessage".hashCode()
+}
+
+data class MergedConvertInfo(
+    var updateTime: Date,
+    var count: Int,
+    val convertInfo: ConvertInfo,
 )
+
+
 
 class MyViewModel : ViewModel() {
     private val scope = CoroutineScope(Dispatchers.Default)
@@ -55,8 +66,8 @@ class MyViewModel : ViewModel() {
     private val _activeMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
     val activeMessages: StateFlow<List<ConvertInfo>> = _activeMessages
 
-    private val _errorMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
-    val errorMessages: StateFlow<List<ConvertInfo>> = _errorMessages
+    private val _errorMessages = MutableStateFlow<MutableMap<Int, MergedConvertInfo>>(mutableMapOf())
+    val errorMessages: StateFlow<Map<Int, MergedConvertInfo>> = _errorMessages
 
     fun updateTaskCount(count:Int) {
         _taskCount.value = count
@@ -96,6 +107,9 @@ class MyViewModel : ViewModel() {
     }
 
     fun addErrorMessage(errorInfo: ConvertInfo) {
-        _errorMessages.value = _errorMessages.value + errorInfo
+        _errorMessages.value[errorInfo.hash].apply {
+            this?.count?.plus(1)
+            this?.updateTime = Date()
+        }
     }
 }

@@ -1,9 +1,10 @@
 package jp.si.test.media
 
+import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class ConverterViewModel {
+class ConverterViewModel : ViewModel() {
     private var _audioEncodeOptions = MutableStateFlow<MutableMap<String, AudioEncodeOption>>(mutableMapOf())
     val audioEncodeOptions: StateFlow<Map<String, AudioEncodeOption>> = _audioEncodeOptions
 
@@ -12,5 +13,8 @@ class ConverterViewModel {
 
     init {
         _audioEncodeOptions.value[AudioEncodeOptionAAC().name] = AudioEncodeOptionAAC()
+        _videoEncodeOptions.value[VideoEncodeOptionAVC().name] = VideoEncodeOptionAVC()
     }
+
+
 }

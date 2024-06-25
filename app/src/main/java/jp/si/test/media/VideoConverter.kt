@@ -1,30 +1,96 @@
 package jp.si.test.media
 
 import android.media.MediaCodecInfo
+import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 
-abstract class VideoEncodeOption : EncodeOption()
+abstract class VideoEncodeOption : EncodeOption() {
+//    data class Config(
+//        var width: Int = 0,
+//        var height: Int = 0,
+//        var bitRate: Int = 0,
+//        var frameRate: Int = 0,
+//    )
+//
+//    fun configFromMediaFormat(srcFormat: MediaFormat): Config {
+//        return normalize(Config().apply {
+//            width = srcFormat.getInteger(MediaFormat.KEY_WIDTH, 128)
+//            height = srcFormat.getInteger(MediaFormat.KEY_HEIGHT, 128)
+//            bitRate = srcFormat.getInteger(MediaFormat.KEY_BIT_RATE, 2000000)
+//            frameRate = srcFormat.getInteger(MediaFormat.KEY_FRAME_RATE, 30)
+//        })
+//    }
+//
+//    private fun normalize(config: Config): Config {
+//        val capabilities = capabilities() ?: return config
+//        return config.apply {
+//            width = clamp(width, capabilities.supportedWidths)
+//            height = clamp(height, capabilities.supportedHeights)
+//            bitRate = clamp(bitRate, capabilities.bitrateRange)
+//            frameRate = clamp(frameRate, capabilities.supportedFrameRates)
+//        }
+//    }
+//
+    protected fun clamp(value: Int, range: android.util.Range<Int>): Int {
+        return when {
+            value < range.lower -> range.lower
+            value > range.upper -> range.upper
+            else -> value
+        }
+    }
+
+    protected fun capabilities(): MediaCodecInfo.VideoCapabilities? {
+        val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+        for (codecInfo in codecList.codecInfos) {
+            if (codecInfo.isEncoder) {
+                val supportedTypes = codecInfo.supportedTypes
+                for (type in supportedTypes) {
+                    return codecInfo.getCapabilitiesForType(type)?.videoCapabilities
+                }
+            }
+        }
+        return null
+    }
+
+
+    override fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat {
+        val capabilities = capabilities() ?: throw RuntimeException("capabilities is null")
+
+        val width = inputFormat.getInteger(MediaFormat.KEY_WIDTH, 128).apply {
+            clamp(this, capabilities.supportedWidths)
+        }
+        val height = inputFormat.getInteger(MediaFormat.KEY_HEIGHT, 128).apply {
+            clamp(this, capabilities.supportedHeights)
+        }
+
+        return MediaFormat.createVideoFormat(name, width, height).apply {
+            inputFormat.getInteger(MediaFormat.KEY_BIT_RATE, 2000000).apply {
+                clamp(this, capabilities.bitrateRange)
+            }
+            inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE, 30).apply {
+                clamp(this, capabilities.supportedFrameRates)
+            }
+        }
+    }
+
+}
 
 class VideoEncodeOptionAVC(
-    private val bitRate: Int? = null,
-    private val frameRate: Int? = null,
-    private val iFrameInterval: Int? = null,
-    private val colorFormat: Int? = null,
+    private val bitRate: Int = 2000000,
+    private val frameRate: Int = 30,
+    private val iFrameInterval: Int = 2,
+    private val colorFormat: Int? = null// = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible,
 ) : VideoEncodeOption() {
     override val name: String
         get() = MediaFormat.MIMETYPE_VIDEO_AVC
 
     override fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat {
-        val width = inputFormat.getInteger(MediaFormat.KEY_WIDTH)
-        val height = inputFormat.getInteger(MediaFormat.KEY_HEIGHT)
-
-        return MediaFormat.createVideoFormat(name, width, height).apply {
-            applyInteger(this, inputFormat, MediaFormat.KEY_BIT_RATE, bitRate, 2000000)
-            applyInteger(this, inputFormat, MediaFormat.KEY_FRAME_RATE, frameRate, 30)
-            applyInteger(this, inputFormat, MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval, 2)
-            // optional
-            applyInteger(this, inputFormat, MediaFormat.KEY_COLOR_FORMAT, colorFormat, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible)
+        return super.createEncodeFormat(inputFormat).apply {
+            applyInteger(this, inputFormat, MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval)
+            if (colorFormat != null) {
+                applyInteger(this, inputFormat, MediaFormat.KEY_COLOR_FORMAT, colorFormat)
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package jp.si.test.media
 
 import android.media.MediaCodec
+import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.util.Log
@@ -8,18 +9,87 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 abstract class EncodeOption {
-    public abstract val name: String
+    abstract val name: String
 
     abstract fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat
 
-    protected fun applyInteger(format: MediaFormat, input: MediaFormat, key: String, value: Int?, default: Int) {
-        if (null != value) {
-            format.setInteger(key, value)
-        } else {
-            format.setInteger(key, input.getInteger(key, default))
+    fun defaultEncodeFormat(): MediaFormat? {
+        val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+        for (codecInfo in codecList.codecInfos) {
+            if (!codecInfo.isEncoder) {
+                continue
+            }
+            val supportedTypes = codecInfo.supportedTypes
+            for (type in supportedTypes) {
+                if (name != type) {
+                    continue
+                }
+                val capabilities = codecInfo.getCapabilitiesForType(type)
+                if (capabilities != null) {
+                    return capabilities.defaultFormat
+                }
+            }
+        }
+        return null
+    }
+
+    protected fun applyInteger(
+        oFormat: MediaFormat,
+        iFormat: MediaFormat,
+        key: String,
+        default: Int
+    ) {
+        oFormat.setInteger(key, iFormat.getInteger(key, default))
+    }
+}
+
+
+
+fun getCodecInfo() {
+    val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+    for (codecInfo in codecList.codecInfos) {
+        if (codecInfo.isEncoder) {
+            val supportedTypes = codecInfo.supportedTypes
+            for (type in supportedTypes) {
+                Log.d("CodecInfo", "=============== $codecInfo ====================")
+                Log.d("CodecInfo", "Codec: ${codecInfo.name}")
+                Log.d("CodecInfo", "Type: $type")
+                val capabilities = codecInfo.getCapabilitiesForType(type)
+                capabilities?.let {
+//                    Log.d("CodecInfo", "encode: ${capabilities.encoderCapabilities.complexityRange}")
+//                    Log.d("CodecInfo", "encode: ${capabilities.encoderCapabilities.qualityRange}")
+                    Log.d("CodecInfo", "maxinstances: ${capabilities.maxSupportedInstances}")
+                    Log.d("CodecInfo", "defaltformat: ${capabilities.defaultFormat}")
+                    val audioCapabilities = capabilities.audioCapabilities
+                    audioCapabilities?.let {
+                        Log.d("CodecInfo", "=== AUDIO ===")
+                        Log.d("CodecInfo", "Bit Rates: ${audioCapabilities.bitrateRange}")
+                        Log.d("CodecInfo", "Sample Rates: ${audioCapabilities.supportedSampleRates}")
+                        Log.d("CodecInfo", "Sample Rates: ${audioCapabilities.supportedSampleRateRanges}")
+                        Log.d("CodecInfo", "channel: ${audioCapabilities.maxInputChannelCount}")
+                        Log.d("CodecInfo", "channel: ${audioCapabilities.minInputChannelCount}")
+                    }
+                    val videoCapabilities = capabilities.videoCapabilities
+                    videoCapabilities?.let {
+                        val bitRates = videoCapabilities.bitrateRange
+                        val frameRates = videoCapabilities.supportedFrameRates
+                        val widths = videoCapabilities.supportedWidths
+                        val heights = videoCapabilities.supportedHeights
+
+                        Log.d("CodecInfo", "=== VIDEO ===")
+                        Log.d("CodecInfo", "Bit Rates: $bitRates")
+                        Log.d("CodecInfo", "Frame Rates: $frameRates")
+                        Log.d("CodecInfo", "Widths: $widths")
+                        Log.d("CodecInfo", "Heights: $heights")
+                        Log.d("CodecInfo", "performancepoint: ${videoCapabilities.supportedPerformancePoints}")
+
+                    }
+                }
+            }
         }
     }
 }
+
 
 abstract class AbstractMediaConverter(
     private val inputFilePath: String,
@@ -37,6 +107,9 @@ abstract class AbstractMediaConverter(
     @Throws(IOException::class)
     fun convert() {
         try {
+            getCodecInfo()
+
+
             setupExtractor()
             setupDecoder()
             setupEncoder()
@@ -77,6 +150,11 @@ abstract class AbstractMediaConverter(
     @Throws(Exception::class)
     fun setupEncoder() {
         val format = encode.createEncodeFormat(extractor.getTrackFormat(extractor.sampleTrackIndex))
+//        var format = encode.defaultEncodeFormat()
+//        if (format == null) {
+//            format = encode.createEncodeFormat(extractor.getTrackFormat(extractor.sampleTrackIndex))
+//        }
+
         val codec = format.getString(MediaFormat.KEY_MIME)!!
         encoder = MediaCodec.createEncoderByType(codec)
         encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
