@@ -213,9 +213,10 @@ class MainActivity : ComponentActivity() {
                         shape = RoundedCornerShape(1.dp)
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
-                            val message = errorMessages[index]
+                            val count = errorMessages[index].second.count
+                            val message = errorMessages[index].second.convertInfo
                             Text(
-                                "(${message.id}):${message.fileName}",
+                                "(${count}):${message.fileName}",
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
@@ -249,6 +250,7 @@ class MainActivity : ComponentActivity() {
                         val file = files[fileIndex % files.size]
                         val job = launch {
                             val index = viewModel.incrementTotalTaskCount()
+
                             val outputFileName = generateOutputFileName(file.name, index)
                             val convertInfo = ConvertInfo(
                                 index,
@@ -294,7 +296,7 @@ class MainActivity : ComponentActivity() {
         return "${inputFileName}_${timestamp}_${index}"
     }
 
-    private fun updateCounts(file: File, viewModel: MyViewModel) {
+    private suspend fun updateCounts(file: File, viewModel: MyViewModel) {
         val hasAudio = mediaConverter.hasTrack(file.absolutePath, "audio/")
         val hasVideo = mediaConverter.hasTrack(file.absolutePath, "video/")
         when {

@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.sync.Mutex
 import java.util.Date
 
 data class ConvertInfo(
@@ -32,6 +34,8 @@ data class MergedConvertInfo(
 
 
 class MyViewModel : ViewModel() {
+    private val mutex = Mutex()
+
     private val scope = CoroutineScope(Dispatchers.Default)
 
     private val _taskCount = MutableStateFlow(0)
@@ -55,61 +59,79 @@ class MyViewModel : ViewModel() {
     private val _errorCount = MutableStateFlow(0)
     val errorCount: StateFlow<Int> = _errorCount
 
-    val allCount: StateFlow<Int> = combine(bothCount, audioOnlyCount, videoOnlyCount, noneCount) { bothCount, audioOnlyCount, videoOnlyCount, noneCount ->
+    val allCount: StateFlow<Int> = combine(
+        bothCount,
+        audioOnlyCount,
+        videoOnlyCount,
+        noneCount
+    ) { bothCount, audioOnlyCount, videoOnlyCount, noneCount ->
         bothCount + audioOnlyCount + videoOnlyCount + noneCount
     }.stateIn(scope, SharingStarted.Eagerly, 0)
 
-    val successCount: StateFlow<Int> = combine(allCount, errorCount, noneCount) { allCount, errorCount, noneCount ->
-        allCount - errorCount - noneCount
-    }.stateIn(scope, SharingStarted.Eagerly, 0)
+    val successCount: StateFlow<Int> =
+        combine(allCount, errorCount, noneCount) { allCount, errorCount, noneCount ->
+            allCount - errorCount - noneCount
+        }.stateIn(scope, SharingStarted.Eagerly, 0)
 
     private val _activeMessages = MutableStateFlow<List<ConvertInfo>>(emptyList())
     val activeMessages: StateFlow<List<ConvertInfo>> = _activeMessages
 
-    private val _errorMessages = MutableStateFlow<MutableMap<Int, MergedConvertInfo>>(mutableMapOf())
-    val errorMessages: StateFlow<Map<Int, MergedConvertInfo>> = _errorMessages
+    private val _errorMessages = MutableStateFlow<MutableList<Pair<Int, MergedConvertInfo>>>(mutableListOf())
+    val errorMessages: StateFlow<MutableList<Pair<Int, MergedConvertInfo>>> = _errorMessages
 
-    fun updateTaskCount(count:Int) {
+    suspend fun updateTaskCount(count: Int) = mutex.lock {
         _taskCount.value = count
     }
 
-    fun incrementTotalTaskCount(): Int {
+    suspend fun incrementTotalTaskCount(): Any = mutex.lock {
         _totalTaskCount.value += 1
-        return _totalTaskCount.value
+        return@lock _totalTaskCount.value
     }
 
-    fun incrementBothCount() {
+    suspend fun incrementBothCount() = mutex.lock {
         _bothCount.value += 1
     }
 
-    fun incrementAudioOnlyCount() {
+    suspend fun incrementAudioOnlyCount() = mutex.lock {
         _audioOnlyCount.value += 1
     }
 
-    fun incrementVideoOnlyCount() {
+    suspend fun incrementVideoOnlyCount() = mutex.lock {
         _videoOnlyCount.value += 1
     }
 
-    fun incrementNoneCount() {
+    suspend fun incrementNoneCount() = mutex.lock {
         _noneCount.value += 1
     }
 
-    fun incrementErrorCount() {
+    suspend fun incrementErrorCount() = mutex.lock {
         _errorCount.value += 1
     }
 
-    fun addActiveMessage(activeInfo: ConvertInfo) {
+    suspend fun addActiveMessage(activeInfo: ConvertInfo) = mutex.lock {
         _activeMessages.value = _activeMessages.value + activeInfo
     }
 
-    fun removeActiveMassage(activeInfoId: Int) {
+    suspend fun removeActiveMassage(activeInfoId: Int) = mutex.lock {
         _activeMessages.value = _activeMessages.value.filter { it.id != activeInfoId }
     }
 
-    fun addErrorMessage(errorInfo: ConvertInfo) {
-        _errorMessages.value[errorInfo.hash].apply {
-            this?.count?.plus(1)
-            this?.updateTime = Date()
+    suspend fun addErrorMessage(errorInfo: ConvertInfo) = mutex.lock {
+        for (msg in _errorMessages.value) {
+            if (msg.first == errorInfo.hash) {
+                msg.second.let {
+                    it.count += 1
+                    it.updateTime = Date()
+                }
+                return@lock
+            }
         }
+        _errorMessages.value = (_errorMessages.value + Pair(
+            errorInfo.hash, MergedConvertInfo(
+                count = 1,
+                updateTime = Date(),
+                convertInfo = errorInfo
+            )
+        )).toMutableList()
     }
 }
