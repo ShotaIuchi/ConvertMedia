@@ -27,20 +27,22 @@ class MediaConverter {
         }
     }
 
-    @Throws(IOException::class)
-    fun hasTrack(inputFilePath: String, mimePrefix: String): Boolean {
+    fun hasTrack(filePath: String, mimePrefix: String): Boolean {
+        return getCodecInfo(filePath, mimePrefix).isNotEmpty()
+    }
+
+    fun getCodecInfo(filePath: String, mimePrefix: String): String {
         val extractor = MediaExtractor()
-        extractor.setDataSource(inputFilePath)
-        val trackCount = extractor.trackCount
-        for (i in 0 until trackCount) {
+        extractor.setDataSource(filePath)
+        for (i in 0 until extractor.trackCount) {
             val format = extractor.getTrackFormat(i)
             val mime = format.getString(MediaFormat.KEY_MIME)
             if (mime != null && mime.startsWith(mimePrefix)) {
                 extractor.release()
-                return true
+                return mime//mime.split("/").getOrNull(1) ?: ""
             }
         }
         extractor.release()
-        return false
+        return ""
     }
 }

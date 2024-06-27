@@ -1,9 +1,8 @@
 package jp.si.test.media
 
 import android.annotation.SuppressLint
-import android.media.MediaExtractor
-import android.media.MediaFormat
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -18,22 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
-import java.io.File
-import java.text.SimpleDateFormat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.StateFlow
 import java.util.*
 
 class MainActivity : ComponentActivity() {
-    private val mediaConverter = MediaConverter()
-    private lateinit var videoDir: File
-    private lateinit var outputDir: File
     private val maxTasks = 5
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        videoDir = File(filesDir, "")
-        outputDir = File(filesDir, "out")
 
         setContent {
             MyApp()
@@ -45,6 +37,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyApp() {
         val viewModel: MyViewModel = viewModel()
+        viewModel.initialize(filesDir)
+
         var isRunning by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
@@ -104,9 +98,9 @@ class MainActivity : ComponentActivity() {
                     Spacer(modifier = Modifier.height(2.dp))
                     ProgressSection(viewModel)
                     Spacer(modifier = Modifier.height(2.dp))
-                    ActiveSection(viewModel)
+                    Message(viewModel.activeMessages, border = BorderStroke(1.dp, Color.Blue))
                     Spacer(modifier = Modifier.height(2.dp))
-                    ErrorSection(viewModel)
+                    Message(viewModel.errorMessages, border = BorderStroke(1.dp, Color.Red))
                 }
             }
             LaunchedEffect(isRunning) {
@@ -162,12 +156,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ActiveSection(viewModel: MyViewModel) {
-        val activeMessages by viewModel.activeMessages.collectAsState()
+    fun Message(stateMessages: StateFlow<List<ConvertInfo>>, border: BorderStroke) {
+        val messages by stateMessages.collectAsState()
 
-        Box(Modifier.border(border = BorderStroke(1.dp, Color.Blue))) {
+        Box(Modifier.border(border)) {
             LazyColumn(Modifier.padding(1.dp)) {
-                items(activeMessages.size) { index ->
+                items(messages.size) { index ->
                     Card(
                         modifier = Modifier
                             .padding(1.dp)
@@ -176,58 +170,25 @@ class MainActivity : ComponentActivity() {
                         shape = RoundedCornerShape(1.dp)
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
-                            val message = activeMessages[index]
+                            val message = messages[index]
                             Text(
-                                "(${message.id}):${message.fileName}",
+                                "(${message.id}):${message.inputFile}",
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Audio: ${activeMessages[index].audioCodec} --> ${activeMessages[index].audioEncodeOption}",
+                                "Audio: ${message.audioInputCodec} --> ${message.audioEncodeOption.name}",
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
-                                "Video: ${activeMessages[index].videoCodec} --> ${activeMessages[index].videoEncodeOption}",
+                                "Video: ${message.videoInputCodec} --> ${message.videoEncodeOption.name}",
                                 style = MaterialTheme.typography.bodySmall
                             )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun ErrorSection(viewModel: MyViewModel) {
-        val errorMessages by viewModel.errorMessages.collectAsState()
-
-        Box(Modifier.border(border = BorderStroke(1.dp, Color.Red))) {
-            LazyColumn(Modifier.padding(1.dp)) {
-                items(errorMessages.size) { index ->
-                    Card(
-                        modifier = Modifier
-                            .padding(1.dp)
-                            .fillMaxWidth(),
-                        border = BorderStroke(1.dp, Color.Black),
-                        shape = RoundedCornerShape(1.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            val message = errorMessages[index]
-                            Text(
-                                "(${message.id}):${message.fileName}",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                "Audio: ${message.audioCodec} --> ${message.audioEncodeOption}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                "Video: ${message.videoCodec} --> ${message.videoEncodeOption}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                message.errorMessage,
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            if (message.errorMessage.isNotEmpty()) {
+                                Text(
+                                    message.errorMessage,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
                     }
                 }
@@ -239,45 +200,21 @@ class MainActivity : ComponentActivity() {
         val tasks = mutableListOf<Job>()
         try {
             withContext(Dispatchers.IO) {
-                val files = videoDir.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-                var fileIndex = 0
-
                 while (isRunning()) {
-                    if (tasks.size < maxTasks && files.isNotEmpty()) {
-                        val file = files[fileIndex % files.size]
+                    Log.d("XXXXXXXX", "${tasks.size}")
+                    if (tasks.size < maxTasks) {
+                        Log.d("XXXXXXXX", "NEW")
                         val job = launch {
-                            val index = viewModel.incrementTotalTaskCount()
-                            val outputFileName = generateOutputFileName(file.name, index)
-                            val convertInfo = ConvertInfo(
-                                index,
-                                file.name,
-                                audioCodec = getCodecInfo(file.absolutePath, "audio/"),
-                                videoCodec = getCodecInfo(file.absolutePath, "video/"),
-                                audioEncodeOption = AudioEncodeOptionAAC(),
-                                videoEncodeOption = VideoEncodeOptionAVC(),
-                            )
-                            try {
-                                viewModel.addActiveMessage(convertInfo)
-                                mediaConverter.convert(
-                                    file.absolutePath,
-                                    outputDir.resolve("$outputFileName.aac").absolutePath,
-                                    outputDir.resolve("$outputFileName.avc").absolutePath,
-                                    convertInfo.audioEncodeOption,
-                                    convertInfo.videoEncodeOption,
-                                )
-                            } catch (e: Exception) {
-                                convertInfo.errorMessage = e.message ?: e.javaClass.name
-                                viewModel.addErrorMessage(convertInfo)
-                                viewModel.incrementErrorCount()
-                            } finally {
-                                viewModel.removeActiveMassage(index)
-                                updateCounts(file, viewModel)
+                            withContext(Dispatchers.Default) {
+                                viewModel.convert()
+                                Log.d("XXXXXXXX", "FIX")
                             }
                         }
                         tasks.add(job)
-                        fileIndex++
                     }
-                    tasks.removeAll { it.isCompleted }
+                    tasks.removeAll {
+                        it.isCompleted
+                    }
                     viewModel.updateTaskCount(tasks.size)
                     delay(100)
                 }
@@ -287,34 +224,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateOutputFileName(inputFileName: String, index: Int): String {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        return "${inputFileName}_${timestamp}_${index}"
-    }
-
-    private fun updateCounts(file: File, viewModel: MyViewModel) {
-        val hasAudio = mediaConverter.hasTrack(file.absolutePath, "audio/")
-        val hasVideo = mediaConverter.hasTrack(file.absolutePath, "video/")
-        when {
-            hasAudio && hasVideo -> viewModel.incrementBothCount()
-            hasAudio -> viewModel.incrementAudioOnlyCount()
-            hasVideo -> viewModel.incrementVideoOnlyCount()
-            else -> viewModel.incrementNoneCount()
-        }
-    }
-
-    private fun getCodecInfo(filePath: String, mimePrefix: String): String {
-        val extractor = MediaExtractor()
-        extractor.setDataSource(filePath)
-        for (i in 0 until extractor.trackCount) {
-            val format = extractor.getTrackFormat(i)
-            val mime = format.getString(MediaFormat.KEY_MIME)
-            if (mime != null && mime.startsWith(mimePrefix)) {
-                extractor.release()
-                return mime.split("/").getOrNull(1) ?: ""
-            }
-        }
-        extractor.release()
-        return ""
-    }
 }
