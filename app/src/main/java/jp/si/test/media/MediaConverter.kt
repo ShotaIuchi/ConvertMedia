@@ -2,13 +2,13 @@ package jp.si.test.media
 
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import java.io.IOException
+import java.io.File
 
 class MediaConverter {
     fun convert(
-        inputFilePath: String,
-        audioOutputFilePath: String,
-        videoOutputFilePath: String,
+        inputFilePath: File,
+        audioOutputFilePath: File,
+        videoOutputFilePath: File,
         audioEncodeOption: AudioEncodeOption,
         videoEncodeOption: VideoEncodeOption
     ) {
@@ -27,13 +27,17 @@ class MediaConverter {
         }
     }
 
-    fun hasTrack(filePath: String, mimePrefix: String): Boolean {
-        return getCodecInfo(filePath, mimePrefix).isNotEmpty()
+    fun hasTrack(file: File, mimePrefix: String): Boolean {
+        return getCodecInfo(file, mimePrefix).isNotEmpty()
     }
 
-    fun getCodecInfo(filePath: String, mimePrefix: String): String {
+    fun getCodecName(file: File, mimePrefix: String): String {
+        return getCodecInfo(file, mimePrefix).split("/").getOrNull(1) ?: ""
+    }
+
+    fun getCodecInfo(file: File, mimePrefix: String): String {
         val extractor = MediaExtractor()
-        extractor.setDataSource(filePath)
+        extractor.setDataSource(file.absolutePath)
         for (i in 0 until extractor.trackCount) {
             val format = extractor.getTrackFormat(i)
             val mime = format.getString(MediaFormat.KEY_MIME)

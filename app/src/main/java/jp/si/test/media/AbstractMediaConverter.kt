@@ -4,6 +4,7 @@ import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.util.Log
+import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
@@ -22,8 +23,8 @@ abstract class EncodeOption {
 }
 
 abstract class AbstractMediaConverter(
-    private val inputFilePath: String,
-    private val outputFilePath: String,
+    private val inputFilePath: File,
+    private val outputFilePath: File,
     private val encode: EncodeOption,
 ) {
     private lateinit var extractor: MediaExtractor
@@ -57,7 +58,7 @@ abstract class AbstractMediaConverter(
     @Throws(Exception::class)
     fun setupExtractor() {
         extractor = MediaExtractor()
-        extractor.setDataSource(inputFilePath)
+        extractor.setDataSource(inputFilePath.absolutePath)
         val trackIndex = selectTrack(extractor)
         if (trackIndex == -1) {
             throw RuntimeException("Not found track")
@@ -85,7 +86,7 @@ abstract class AbstractMediaConverter(
 
     @Throws(Exception::class)
     fun setupOutStream() {
-        outputStream = FileOutputStream(outputFilePath)
+        outputStream = FileOutputStream(outputFilePath.absolutePath)
     }
 
     @Throws(Exception::class)

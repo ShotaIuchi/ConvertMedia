@@ -3,6 +3,7 @@ package jp.si.test.media
 import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import java.io.File
 
 abstract class VideoEncodeOption : EncodeOption()
 
@@ -29,8 +30,8 @@ class VideoEncodeOptionAVC(
     }
 }
 class VideoConverter(
-    inputFilePath: String,
-    outputFilePath: String,
+    inputFilePath: File,
+    outputFilePath: File,
     encode: VideoEncodeOption,
 ) : AbstractMediaConverter(inputFilePath, outputFilePath, encode) {
     override fun selectTrack(extractor: MediaExtractor): Int {
