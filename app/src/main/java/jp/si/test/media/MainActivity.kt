@@ -22,11 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import java.util.*
 
 class MainActivity : ComponentActivity() {
-    private val maxTasks = 5
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             MyApp()
         }
@@ -106,7 +103,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(isRunning) {
                 if (isRunning) {
                     scope.launch {
-                        processFiles(viewModel, selectedAudioCodec, selectedVideoCodec) { isRunning }
+                        viewModel.processFiles { isRunning }
                     }
                 }
             }
@@ -195,33 +192,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private suspend fun processFiles(viewModel: MyViewModel, audioCodec: String, videoCodec: String, isRunning: () -> Boolean) {
-        val tasks = mutableListOf<Job>()
-        try {
-            withContext(Dispatchers.IO) {
-                while (isRunning()) {
-                    Log.d("XXXXXXXX", "${tasks.size}")
-                    if (tasks.size < maxTasks) {
-                        Log.d("XXXXXXXX", "NEW")
-                        val job = launch {
-                            withContext(Dispatchers.Default) {
-                                viewModel.convert()
-                                Log.d("XXXXXXXX", "FIX")
-                            }
-                        }
-                        tasks.add(job)
-                    }
-                    tasks.removeAll {
-                        it.isCompleted
-                    }
-                    viewModel.updateTaskCount(tasks.size)
-                    delay(100)
-                }
-            }
-        } finally {
-            tasks.forEach { it.cancelAndJoin() }
-        }
-    }
-
 }
