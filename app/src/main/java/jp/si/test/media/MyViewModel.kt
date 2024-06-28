@@ -24,7 +24,7 @@ import java.util.Date
 import java.util.Locale
 
 data class ConvertInfo(
-    val id: Int,
+    var id: List<Int> = mutableListOf(),
     val inputFile: File,
     val audioInputCodec: String,
     val videoInputCodec: String,
@@ -33,7 +33,17 @@ data class ConvertInfo(
     val audioEncodeOption: AudioEncodeOption,
     val videoEncodeOption: VideoEncodeOption,
     var errorMessage: String = "",
-)
+) {
+    override fun hashCode(): Int {
+        return (inputFile.absolutePath + audioInputCodec + videoInputCodec + audioEncodeOption.name + videoEncodeOption.name + errorMessage).hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        return this.hashCode() == other.hashCode()
+    }
+}
 
 class MyViewModel : ViewModel() {
     private val maxTasks = 5
@@ -87,10 +97,20 @@ class MyViewModel : ViewModel() {
     }
 
     private suspend fun removeActiveMassage(convertInfo: ConvertInfo) = mutex.withLock {
-        _activeMessages.value = _activeMessages.value.filter { it.id != convertInfo.id }
+        _activeMessages.value = _activeMessages.value.filter { it.id[0] != convertInfo.id[0] }
     }
 
     private suspend fun addErrorMessage(convertInfo: ConvertInfo) = mutex.withLock {
+        val convertInfoHash = convertInfo.hashCode()
+        for (v in _errorMessages.value) {
+            if (v.hashCode() == convertInfoHash) {
+                v.id = v.id + convertInfo.id
+                val tmp = _errorMessages.value.toMutableList()
+                _errorMessages.value = mutableListOf()
+                _errorMessages.value = tmp
+                return@withLock
+            }
+        }
         _errorMessages.value = _errorMessages.value + convertInfo
     }
 
@@ -122,7 +142,7 @@ class MyViewModel : ViewModel() {
         val audio = AudioEncodeOptionAAC()
         val video = VideoEncodeOptionAVC()
         val convert = ConvertInfo(
-            convertIndex,
+            mutableListOf(convertIndex),
             inputFile,
             mediaConverter.getCodecInfo(inputFile, "audio/"),
             mediaConverter.getCodecInfo(inputFile, "video/"),

@@ -169,7 +169,11 @@ class MainActivity : ComponentActivity() {
                         Column(modifier = Modifier.padding(8.dp)) {
                             val message = messages[index]
                             Text(
-                                "(${message.id}):${message.inputFile}",
+                                "${message.id}",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                "${message.inputFile}",
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
