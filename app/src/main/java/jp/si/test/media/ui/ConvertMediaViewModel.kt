@@ -1,9 +1,9 @@
 package jp.si.test.media.ui
 
 import androidx.lifecycle.ViewModel
+import jp.si.test.media.converter.MediaConverter
 import jp.si.test.media.converter.audio.AudioEncodeOption
 import jp.si.test.media.converter.audio.AudioEncodeOptionAAC
-import jp.si.test.media.converter.MediaConverter
 import jp.si.test.media.converter.video.VideoEncodeOption
 import jp.si.test.media.converter.video.VideoEncodeOptionAVC
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +23,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
+
 import java.util.Date
 import java.util.Locale
 
@@ -48,7 +49,7 @@ data class ConvertInfo(
     }
 }
 
-class MyViewModel : ViewModel() {
+class ConvertMediaViewModel : ViewModel() {
     private val maxTasks = 5
 
     private val scope = CoroutineScope(Dispatchers.Default)
