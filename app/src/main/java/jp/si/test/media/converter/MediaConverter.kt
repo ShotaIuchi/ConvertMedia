@@ -1,7 +1,11 @@
-package jp.si.test.media
+package jp.si.test.media.converter
 
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import jp.si.test.media.converter.audio.AudioConverter
+import jp.si.test.media.converter.audio.AudioEncodeOption
+import jp.si.test.media.converter.video.VideoConverter
+import jp.si.test.media.converter.video.VideoEncodeOption
 import java.io.File
 
 class MediaConverter {

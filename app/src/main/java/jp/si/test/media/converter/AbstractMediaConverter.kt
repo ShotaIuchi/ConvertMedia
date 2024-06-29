@@ -1,4 +1,4 @@
-package jp.si.test.media
+package jp.si.test.media.converter
 
 import android.media.MediaCodec
 import android.media.MediaExtractor

@@ -1,6 +1,11 @@
-package jp.si.test.media
+package jp.si.test.media.ui
 
 import androidx.lifecycle.ViewModel
+import jp.si.test.media.converter.audio.AudioEncodeOption
+import jp.si.test.media.converter.audio.AudioEncodeOptionAAC
+import jp.si.test.media.converter.MediaConverter
+import jp.si.test.media.converter.video.VideoEncodeOption
+import jp.si.test.media.converter.video.VideoEncodeOptionAVC
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

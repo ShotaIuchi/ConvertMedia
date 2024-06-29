@@ -1,8 +1,10 @@
-package jp.si.test.media
+package jp.si.test.media.converter.video
 
 import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import jp.si.test.media.converter.AbstractMediaConverter
+import jp.si.test.media.converter.EncodeOption
 import java.io.File
 
 abstract class VideoEncodeOption : EncodeOption()
