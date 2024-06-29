@@ -1,9 +1,12 @@
 package jp.si.test.media.ui
 
 import androidx.lifecycle.ViewModel
-import jp.si.test.media.converter.MediaConverterManager
+import jp.si.test.media.converter.MediaConverter
+import jp.si.test.media.converter.MediaType
 import jp.si.test.media.converter.audio.AudioEncodeOption
 import jp.si.test.media.converter.audio.AudioEncodeOptionAAC
+import jp.si.test.media.converter.getCodecInfo
+import jp.si.test.media.converter.getCodecName
 import jp.si.test.media.converter.video.VideoEncodeOption
 import jp.si.test.media.converter.video.VideoEncodeOptionAVC
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +42,7 @@ data class ConvertInfo(
     var errorMessage: String = "",
 ) {
     override fun hashCode(): Int {
-        return (inputFile.absolutePath + audioInputCodec + videoInputCodec + audioEncodeOption.name + videoEncodeOption.name + errorMessage).hashCode()
+        return (inputFile.absolutePath + audioInputCodec + videoInputCodec + audioEncodeOption.mime + videoEncodeOption.mime + errorMessage).hashCode()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -127,7 +130,7 @@ class ConvertMediaViewModel : ViewModel() {
         _errorMessages.value = _errorMessages.value + convertInfo
     }
 
-    private val mediaConverter = MediaConverterManager()
+    private val mediaConverter = MediaConverter()
 
     private var srcFiles: List<File> = listOf()
     private var outDirectory: File? = null
@@ -157,10 +160,10 @@ class ConvertMediaViewModel : ViewModel() {
         val convert = ConvertInfo(
             mutableListOf(convertIndex),
             inputFile,
-            mediaConverter.getCodecInfo(inputFile, "audio/"),
-            mediaConverter.getCodecInfo(inputFile, "video/"),
-            generateOutputFile(outDirectory!!, inputFile, "audio/", convertIndex),
-            generateOutputFile(outDirectory!!, inputFile, "video/", convertIndex),
+            getCodecInfo(inputFile, MediaType.AUDIO),
+            getCodecInfo(inputFile, MediaType.VIDEO),
+            generateOutputFile(outDirectory!!, inputFile, MediaType.AUDIO, convertIndex),
+            generateOutputFile(outDirectory!!, inputFile, MediaType.VIDEO, convertIndex),
             audio,
             video,
         )
@@ -214,8 +217,8 @@ class ConvertMediaViewModel : ViewModel() {
         }
     }
 
-    private fun generateOutputFile(directory: File, inputFile: File, mimePrefix: String, index: Int): File {
-        val codec = mediaConverter.getCodecName(inputFile, mimePrefix)
+    private fun generateOutputFile(directory: File, inputFile: File, mediaType: MediaType, index: Int): File {
+        val codec = getCodecName(inputFile, mediaType)
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmm_ss", Locale.getDefault()).format(Date())
         return File(directory, "[$timestamp]_($index)_${inputFile.name}_($codec)")
     }

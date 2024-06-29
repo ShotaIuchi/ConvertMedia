@@ -3,7 +3,8 @@ package jp.si.test.media.converter
 import android.media.MediaFormat
 
 abstract class EncodeOption {
-    abstract val name: String
+    abstract val type: MediaType
+    abstract val mime: String
 
     abstract fun createEncodeFormat(inputFormat: MediaFormat): MediaFormat
 

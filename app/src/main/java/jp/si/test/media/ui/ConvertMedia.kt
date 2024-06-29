@@ -238,11 +238,11 @@ fun Message(stateMessages: StateFlow<List<ConvertInfo>>, border: BorderStroke) {
                             style = MaterialTheme.typography.titleSmall
                         )
                         Text(
-                            "Audio: ${message.audioInputCodec} --> ${message.audioEncodeOption.name}",
+                            "Audio: ${message.audioInputCodec} --> ${message.audioEncodeOption.mime}",
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
-                            "Video: ${message.videoInputCodec} --> ${message.videoEncodeOption.name}",
+                            "Video: ${message.videoInputCodec} --> ${message.videoEncodeOption.mime}",
                             style = MaterialTheme.typography.bodySmall
                         )
                         if (message.errorMessage.isNotEmpty()) {
