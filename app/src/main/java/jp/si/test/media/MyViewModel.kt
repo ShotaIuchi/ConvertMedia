@@ -1,7 +1,5 @@
 package jp.si.test.media
 
-import android.provider.ContactsContract.Directory
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +50,11 @@ class MyViewModel : ViewModel() {
 
     private val mutex = Mutex()
 
+    private val tasks = mutableListOf<Job>()
+
+    private val _isRunning = MutableStateFlow(false)
+    val isRunning: StateFlow<Boolean> = _isRunning
+
     private val _taskCount = MutableStateFlow(0)
     val taskCount: StateFlow<Int> = _taskCount
 
@@ -87,6 +90,10 @@ class MyViewModel : ViewModel() {
     val successCount: StateFlow<Int> = combine(allCount, errorCount, noneCount) {
             allCount, errorCount, noneCount -> allCount - errorCount - noneCount }
         .stateIn(scope, SharingStarted.Eagerly, 0)
+
+    fun toggleRunning() {
+        _isRunning.value = !_isRunning.value
+    }
 
     private suspend fun updateTaskCount(count:Int) = mutex.withLock {
         _taskCount.value = count
@@ -156,12 +163,11 @@ class MyViewModel : ViewModel() {
     }
 
 
-    suspend fun processFiles(isRunning: () -> Boolean) {
-        val tasks = mutableListOf<Job>()
+    suspend fun processFiles() {
         try {
             withContext(Dispatchers.IO) {
-                while (isRunning() || (tasks.size > 0)) {
-                    if (isRunning()) {
+                while (isRunning.value || (tasks.size > 0)) {
+                    if (isRunning.value) {
                         if (tasks.size < maxTasks) {
                             val job = launch {
                                 convert()

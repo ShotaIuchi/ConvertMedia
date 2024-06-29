@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val viewModel: MyViewModel = viewModel()
         viewModel.initialize(filesDir)
 
-        var isRunning by remember { mutableStateOf(false) }
+        val isRunning by viewModel.isRunning.collectAsState()
         val scope = rememberCoroutineScope()
 
         var selectedAudioCodec by remember { mutableStateOf("mp4a-latm") }
@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                             drawerState = drawerState,
                             scope = scope,
                             isRunning = isRunning,
-                            setRunning = { isRunning = it }
+                            setRunning = { viewModel.toggleRunning() }
                         )
                     } else {
                         HorizontalLayout(
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                             drawerState = drawerState,
                             scope = scope,
                             isRunning = isRunning,
-                            setRunning = { isRunning = it }
+                            setRunning = { viewModel.toggleRunning() }
                         )
                     }
                 }
@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(isRunning) {
                 if (isRunning) {
                     scope.launch {
-                        viewModel.processFiles { isRunning }
+                        viewModel.processFiles()
                     }
                 }
             }
