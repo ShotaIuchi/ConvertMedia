@@ -67,37 +67,25 @@ class MainActivity : ComponentActivity() {
             drawerState = drawerState
         ) {
             Scaffold {
-                Column(modifier = Modifier.padding(2.dp)) {
-                    Row {
-                        Button(
-                            shape = RoundedCornerShape(4.dp),
-                            onClick = { scope.launch { drawerState.open() } }
-                        ) {
-                            Text("Codec")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            shape = RoundedCornerShape(4.dp),
-                            onClick = { isRunning = true },
-                            enabled = !isRunning
-                        ) {
-                            Text("Start")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            shape = RoundedCornerShape(4.dp),
-                            onClick = { isRunning = false },
-                            enabled = isRunning
-                        ) {
-                            Text("Stop")
-                        }
+                BoxWithConstraints {
+                    val isPortrait = maxWidth < maxHeight
+                    if (isPortrait) {
+                        VerticalLayout(
+                            viewModel = viewModel,
+                            drawerState = drawerState,
+                            scope = scope,
+                            isRunning = isRunning,
+                            setRunning = { isRunning = it }
+                        )
+                    } else {
+                        HorizontalLayout(
+                            viewModel = viewModel,
+                            drawerState = drawerState,
+                            scope = scope,
+                            isRunning = isRunning,
+                            setRunning = { isRunning = it }
+                        )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    ProgressSection(viewModel)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Message(viewModel.activeMessages, border = BorderStroke(1.dp, Color.Blue))
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Message(viewModel.errorMessages, border = BorderStroke(1.dp, Color.Red))
                 }
             }
             LaunchedEffect(isRunning) {
@@ -106,6 +94,96 @@ class MainActivity : ComponentActivity() {
                         viewModel.processFiles { isRunning }
                     }
                 }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun VerticalLayout(
+        viewModel: MyViewModel,
+        drawerState: DrawerState,
+        scope: CoroutineScope,
+        isRunning: Boolean,
+        setRunning: (Boolean) -> Unit
+    ) {
+        Column(modifier = Modifier.padding(2.dp)) {
+            Row {
+                Button(
+                    shape = RoundedCornerShape(4.dp),
+                    onClick = { scope.launch { drawerState.open() } }
+                ) {
+                    Text("Codec")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    shape = RoundedCornerShape(4.dp),
+                    onClick = { setRunning(true) },
+                    enabled = !isRunning
+                ) {
+                    Text("Start")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    shape = RoundedCornerShape(4.dp),
+                    onClick = { setRunning(false) },
+                    enabled = isRunning
+                ) {
+                    Text("Stop")
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            ProgressSection(viewModel)
+            Spacer(modifier = Modifier.height(2.dp))
+            Message(viewModel.activeMessages, border = BorderStroke(1.dp, Color.Blue))
+            Spacer(modifier = Modifier.height(2.dp))
+            Message(viewModel.errorMessages, border = BorderStroke(1.dp, Color.Red))
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun HorizontalLayout(
+        viewModel: MyViewModel,
+        drawerState: DrawerState,
+        scope: CoroutineScope,
+        isRunning: Boolean,
+        setRunning: (Boolean) -> Unit
+    ) {
+        Row(modifier = Modifier.padding(2.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(2.dp)) {
+                Row {
+                    Button(
+                        shape = RoundedCornerShape(4.dp),
+                        onClick = { scope.launch { drawerState.open() } }
+                    ) {
+                        Text("Codec")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        shape = RoundedCornerShape(4.dp),
+                        onClick = { setRunning(true) },
+                        enabled = !isRunning
+                    ) {
+                        Text("Start")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        shape = RoundedCornerShape(4.dp),
+                        onClick = { setRunning(false) },
+                        enabled = isRunning
+                    ) {
+                        Text("Stop")
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                ProgressSection(viewModel)
+                Spacer(modifier = Modifier.height(2.dp))
+                Message(viewModel.activeMessages, border = BorderStroke(1.dp, Color.Blue))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f).padding(2.dp)) {
+                Message(viewModel.errorMessages, border = BorderStroke(1.dp, Color.Red))
             }
         }
     }
