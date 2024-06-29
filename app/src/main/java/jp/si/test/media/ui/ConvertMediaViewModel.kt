@@ -1,7 +1,7 @@
 package jp.si.test.media.ui
 
 import androidx.lifecycle.ViewModel
-import jp.si.test.media.converter.MediaConverter
+import jp.si.test.media.converter.MediaConverterManager
 import jp.si.test.media.converter.audio.AudioEncodeOption
 import jp.si.test.media.converter.audio.AudioEncodeOptionAAC
 import jp.si.test.media.converter.video.VideoEncodeOption
@@ -127,7 +127,7 @@ class ConvertMediaViewModel : ViewModel() {
         _errorMessages.value = _errorMessages.value + convertInfo
     }
 
-    private val mediaConverter = MediaConverter()
+    private val mediaConverter = MediaConverterManager()
 
     private var srcFiles: List<File> = listOf()
     private var outDirectory: File? = null
