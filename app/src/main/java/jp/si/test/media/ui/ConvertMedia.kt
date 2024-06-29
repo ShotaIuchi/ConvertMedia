@@ -1,6 +1,5 @@
 package jp.si.test.media.ui
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
 @Composable
 fun ConvertMedia(convertMediaViewModel: ConvertMediaViewModel) {
     val isRunning by convertMediaViewModel.isRunning.collectAsState()
@@ -51,8 +49,8 @@ fun ConvertMedia(convertMediaViewModel: ConvertMediaViewModel) {
         },
         drawerState = drawerState
     ) {
-        Scaffold {
-            BoxWithConstraints {
+        Scaffold { paddingValues ->
+            BoxWithConstraints(modifier = Modifier.padding(paddingValues)) {
                 val isPortrait = maxWidth < maxHeight
                 if (isPortrait) {
                     VerticalLayout(
