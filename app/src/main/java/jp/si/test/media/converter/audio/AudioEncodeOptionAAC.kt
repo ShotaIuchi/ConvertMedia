@@ -4,8 +4,8 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 
 class AudioEncodeOptionAAC(
-    private val bitRate: Int? = null,
-    private val profile: Int? = null,
+    override val bitRate: Int? = null,
+    override val profile: Int? = null,
 ) : AudioEncodeOption() {
     override val mime: String
         get() = MediaFormat.MIMETYPE_AUDIO_AAC

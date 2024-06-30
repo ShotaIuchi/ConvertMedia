@@ -49,6 +49,8 @@ open class MediaConverterEngineBuffer(
                 decode()
                 encode()
             }
+        } catch (e: Exception) {
+            throw e
         } finally {
             cleanup()
         }

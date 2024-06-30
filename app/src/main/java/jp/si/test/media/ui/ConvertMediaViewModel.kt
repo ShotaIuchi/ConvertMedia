@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import jp.si.test.media.converter.MediaConverter
 import jp.si.test.media.converter.MediaType
 import jp.si.test.media.converter.audio.AudioEncodeOption
-import jp.si.test.media.converter.audio.AudioEncodeOptionAAC
+import jp.si.test.media.converter.audio.AudioEncodeOptionAMRNB
 import jp.si.test.media.converter.getCodecInfo
 import jp.si.test.media.converter.getCodecName
 import jp.si.test.media.converter.video.VideoEncodeOption
-import jp.si.test.media.converter.video.VideoEncodeOptionAVC
+import jp.si.test.media.converter.video.VideoEncodeOptionH264
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -189,8 +189,10 @@ class ConvertMediaViewModel : ViewModel() {
         }
 
         val inputFile = srcFiles[fileIndex]
-        val audio = AudioEncodeOptionAAC()
-        val video = VideoEncodeOptionAVC()
+//        val audio = AudioEncodeOptionAAC()
+        val audio = AudioEncodeOptionAMRNB()
+        val video = VideoEncodeOptionH264()
+//        val video = VideoEncodeOptionH263()
         val convert = ConvertInfo(
             mutableListOf(convertIndex),
             inputFile,
