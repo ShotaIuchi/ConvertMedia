@@ -58,7 +58,7 @@ fun ConvertMedia(convertMediaViewModel: ConvertMediaViewModel) {
                         drawerState = drawerState,
                         scope = scope,
                         isRunning = isRunning,
-                        setRunning = { convertMediaViewModel.toggleRunning() }
+                        setRunning = { scope.launch { convertMediaViewModel.toggleRunning() } }
                     )
                 } else {
                     HorizontalLayout(
@@ -66,7 +66,7 @@ fun ConvertMedia(convertMediaViewModel: ConvertMediaViewModel) {
                         drawerState = drawerState,
                         scope = scope,
                         isRunning = isRunning,
-                        setRunning = { convertMediaViewModel.toggleRunning() }
+                        setRunning = { scope.launch { convertMediaViewModel.toggleRunning() } }
                     )
                 }
             }
@@ -157,6 +157,13 @@ fun HorizontalLayout(
                     enabled = isRunning
                 ) {
                     Text("Stop")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    shape = RoundedCornerShape(4.dp),
+                    onClick = { scope.launch { viewModel.clear() } },
+                ) {
+                    Text("Clear")
                 }
             }
             Spacer(modifier = Modifier.height(2.dp))

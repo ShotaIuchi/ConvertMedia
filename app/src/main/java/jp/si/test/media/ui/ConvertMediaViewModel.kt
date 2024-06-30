@@ -26,7 +26,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
-
 import java.util.Date
 import java.util.Locale
 
@@ -60,6 +59,14 @@ class ConvertMediaViewModel : ViewModel() {
     private val mutex = Mutex()
 
     private val tasks = mutableListOf<Job>()
+
+    private val mediaConverter = MediaConverter()
+
+    private var srcFiles: List<File> = listOf()
+
+    private var outDirectory: File? = null
+
+    private var convertIndex = 0
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning
@@ -97,8 +104,46 @@ class ConvertMediaViewModel : ViewModel() {
             allCount, errorCount, noneCount -> allCount - errorCount - noneCount }
         .stateIn(scope, SharingStarted.Eagerly, 0)
 
-    fun toggleRunning() {
+    fun initialize(cwd: File) {
+        val fCwd = File(cwd, "")
+        this.srcFiles = fCwd.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
+        this.outDirectory = File(cwd, "out")
+    }
+
+    suspend fun clear() = mutex.withLock {
+        _bothCount.value = 0
+        _audioOnlyCount.value = 0
+        _videoOnlyCount.value = 0
+        _noneCount.value = 0
+        _errorMessages.value = emptyList()
+    }
+
+    suspend fun toggleRunning() = mutex.withLock {
         _isRunning.value = !_isRunning.value
+    }
+
+    suspend fun processFiles() {
+        try {
+            withContext(Dispatchers.IO) {
+                while (isRunning.value || (tasks.size > 0)) {
+                    if (isRunning.value) {
+                        if (tasks.size < maxTasks) {
+                            val job = launch {
+                                convert()
+                            }
+                            tasks.add(job)
+                        }
+                    }
+                    tasks.removeAll {
+                        it.isCompleted
+                    }
+                    updateTaskCount(tasks.size)
+                    delay(100)
+                }
+            }
+        } finally {
+            tasks.forEach { it.cancelAndJoin() }
+        }
     }
 
     private suspend fun updateTaskCount(count:Int) = mutex.withLock {
@@ -125,18 +170,6 @@ class ConvertMediaViewModel : ViewModel() {
             }
         }
         _errorMessages.value = _errorMessages.value + convertInfo
-    }
-
-    private val mediaConverter = MediaConverter()
-
-    private var srcFiles: List<File> = listOf()
-    private var outDirectory: File? = null
-    private var convertIndex = 0
-
-    fun initialize(cwd: File) {
-        val fCwd = File(cwd, "")
-        this.srcFiles = fCwd.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-        this.outDirectory = File(cwd, "out")
     }
 
     private fun nextFile(): ConvertInfo? {
@@ -168,31 +201,6 @@ class ConvertMediaViewModel : ViewModel() {
         return convert
     }
 
-
-    suspend fun processFiles() {
-        try {
-            withContext(Dispatchers.IO) {
-                while (isRunning.value || (tasks.size > 0)) {
-                    if (isRunning.value) {
-                        if (tasks.size < maxTasks) {
-                            val job = launch {
-                                convert()
-                            }
-                            tasks.add(job)
-                        }
-                    }
-                    tasks.removeAll {
-                        it.isCompleted
-                    }
-                    updateTaskCount(tasks.size)
-                    delay(100)
-                }
-            }
-        } finally {
-            tasks.forEach { it.cancelAndJoin() }
-        }
-    }
-
     private suspend fun convert() {
         nextFile()?.let {
             try {
@@ -214,12 +222,6 @@ class ConvertMediaViewModel : ViewModel() {
         }
     }
 
-    private fun generateOutputFile(directory: File, inputFile: File, mediaType: MediaType, index: Int): File {
-        val codec = getCodecName(inputFile, mediaType)
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmm_ss", Locale.getDefault()).format(Date())
-        return File(directory, "[$timestamp]_($index)_${inputFile.name}_($codec)")
-    }
-
     private fun updateCounts(convertInfo: ConvertInfo) {
         val hasAudio = convertInfo.audioInputCodec.isNotEmpty()
         val hasVideo = convertInfo.videoInputCodec.isNotEmpty()
@@ -229,5 +231,11 @@ class ConvertMediaViewModel : ViewModel() {
             hasVideo -> _videoOnlyCount.value++
             else -> _videoOnlyCount.value++
         }
+    }
+
+    private fun generateOutputFile(directory: File, inputFile: File, mediaType: MediaType, index: Int): File {
+        val codec = getCodecName(inputFile, mediaType)
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmm_ss", Locale.getDefault()).format(Date())
+        return File(directory, "[$timestamp]_($index)_${inputFile.name}_($codec)")
     }
 }
