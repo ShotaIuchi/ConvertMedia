@@ -23,6 +23,8 @@ open class MediaConverterEngineBuffer(
     private var sawOutputEOS = false
 
     companion object {
+        private const val TIMEOUT_USEC = 10000L
+
         fun create(
             inputFilePath: File,
             outputFilePath: File,
@@ -89,7 +91,7 @@ open class MediaConverterEngineBuffer(
     @Throws(Exception::class)
     private fun read() {
         if (!sawInputEOS) {
-            val inputBufferIndex = decoder.dequeueInputBuffer(10000)
+            val inputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC)
             if (inputBufferIndex >= 0) {
                 val inputBuffer = decoder.getInputBuffer(inputBufferIndex)!!
                 val sampleSize = extractor.readSampleData(inputBuffer, 0)
@@ -107,13 +109,13 @@ open class MediaConverterEngineBuffer(
     @Throws(Exception::class)
     private fun decode() {
         val bufferInfo = MediaCodec.BufferInfo()
-        val outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 10000)
+        val outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC)
         if (outputBufferIndex >= 0) {
             val outputBuffer = decoder.getOutputBuffer(outputBufferIndex)
             if (outputBuffer == null) {
                 decoder.releaseOutputBuffer(outputBufferIndex, false)
 
-                val inputBufferIndex = encoder.dequeueInputBuffer(10000)
+                val inputBufferIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC)
                 if (inputBufferIndex >= 0) {
                     val inputBuffer = encoder.getInputBuffer(inputBufferIndex)!!
                     inputBuffer.clear()
@@ -132,7 +134,7 @@ open class MediaConverterEngineBuffer(
                 outputBuffer.get(decodedData)
                 outputBuffer.clear()
 
-                val inputBufferIndex = encoder.dequeueInputBuffer(10000)
+                val inputBufferIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC)
                 if (inputBufferIndex >= 0) {
                     val inputBuffer = encoder.getInputBuffer(inputBufferIndex)!!
                     inputBuffer.clear()
@@ -142,7 +144,7 @@ open class MediaConverterEngineBuffer(
             }
 
             if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                val inputBufferIndex = encoder.dequeueInputBuffer(10000)
+                val inputBufferIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC)
                 if (inputBufferIndex >= 0) {
                     val inputBuffer = encoder.getInputBuffer(inputBufferIndex)!!
                     inputBuffer.clear()
@@ -157,7 +159,7 @@ open class MediaConverterEngineBuffer(
     @Throws(Exception::class)
     private fun encode() {
         val bufferInfo = MediaCodec.BufferInfo()
-        val outputBufferIndex = encoder.dequeueOutputBuffer(bufferInfo, 10000)
+        val outputBufferIndex = encoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC)
         if (outputBufferIndex >= 0) {
             val outputBuffer = encoder.getOutputBuffer(outputBufferIndex)
             if (outputBuffer == null) {
