@@ -35,7 +35,7 @@ open class MediaConverterEngineBuffer(
     private var sawInputEOS = false
     private var sawOutputEOS = false
 
-    @Throws(IOException::class)
+    @Throws(Exception::class)
     override fun convert() {
         try {
             setupExtractor()
@@ -48,7 +48,7 @@ open class MediaConverterEngineBuffer(
                 encode()
             }
         } catch (e: Exception) {
-            Log.e("AbstractMediaConverter", "Conversion failed: ${e.message}")
+            Log.e("MediaConverterEngineBuffer", "Conversion failed: ${e.message}")
             throw e
         } finally {
             cleanup()
@@ -197,7 +197,7 @@ open class MediaConverterEngineBuffer(
         try {
             outputStream.close()
         } catch (e: IOException) {
-            Log.e("AbstractMediaConverter", "Failed to close output stream: ${e.message}")
+            Log.e("MediaConverterEngineBuffer", "Failed to close output stream: ${e.message}")
         }
 
         decoder.stop()

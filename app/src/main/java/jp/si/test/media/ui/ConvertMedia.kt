@@ -189,7 +189,6 @@ fun CodecSelection(options: List<String>, selectedCodec: String, onCodecSelected
 @Composable
 fun ProgressSection(viewModel: ConvertMediaViewModel) {
     val taskCount by viewModel.taskCount.collectAsState()
-    val totalCount by viewModel.totalTaskCount.collectAsState()
     val allCount by viewModel.allCount.collectAsState()
     val bothCount by viewModel.bothCount.collectAsState()
     val audioOnlyCount by viewModel.audioOnlyCount.collectAsState()
@@ -206,9 +205,8 @@ fun ProgressSection(viewModel: ConvertMediaViewModel) {
         shape = RoundedCornerShape(1.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
-            Text("実行中: $taskCount - 実行数: $totalCount", style = MaterialTheme.typography.bodySmall)
-            Text("合計: $allCount - 動画: $bothCount - 音声: $audioOnlyCount - 画像: $videoOnlyCount - なし: $noneCount", style = MaterialTheme.typography.bodySmall)
-            Text("成功: $successCount - 失敗: $errorCount - 無視: $noneCount", style = MaterialTheme.typography.bodySmall)
+            Text("OK: $successCount, NG: $errorCount, none: $noneCount", style = MaterialTheme.typography.bodySmall)
+            Text("active: $taskCount, all: $allCount, both: $bothCount, audio: $audioOnlyCount, video: $videoOnlyCount, none: $noneCount", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

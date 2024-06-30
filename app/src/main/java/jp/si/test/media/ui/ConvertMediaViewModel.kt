@@ -67,9 +67,6 @@ class ConvertMediaViewModel : ViewModel() {
     private val _taskCount = MutableStateFlow(0)
     val taskCount: StateFlow<Int> = _taskCount
 
-    private val _totalTaskCount = MutableStateFlow(0)
-    val totalTaskCount: StateFlow<Int> = _totalTaskCount
-
     private val _bothCount = MutableStateFlow(0)
     val bothCount: StateFlow<Int> = _bothCount
 
