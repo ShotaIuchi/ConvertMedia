@@ -14,6 +14,14 @@ open class MediaConverterEngineBuffer(
     override val encode: EncodeOption
 ): MediaConverterEngine(
 ) {
+    private lateinit var extractor: MediaExtractor
+    private lateinit var decoder: MediaCodec
+    private lateinit var encoder: MediaCodec
+    private lateinit var outputStream: FileOutputStream
+
+    private var sawInputEOS = false
+    private var sawOutputEOS = false
+
     companion object {
         fun create(
             inputFilePath: File,
@@ -27,14 +35,6 @@ open class MediaConverterEngineBuffer(
         }
     }
 
-    private lateinit var extractor: MediaExtractor
-    private lateinit var decoder: MediaCodec
-    private lateinit var encoder: MediaCodec
-    private lateinit var outputStream: FileOutputStream
-
-    private var sawInputEOS = false
-    private var sawOutputEOS = false
-
     @Throws(Exception::class)
     override fun convert() {
         try {
@@ -47,9 +47,6 @@ open class MediaConverterEngineBuffer(
                 decode()
                 encode()
             }
-        } catch (e: Exception) {
-            Log.e("MediaConverterEngineBuffer", "Conversion failed: ${e.message}")
-            throw e
         } finally {
             cleanup()
         }
@@ -194,12 +191,7 @@ open class MediaConverterEngineBuffer(
 
     @Throws(IOException::class)
     protected fun cleanup() {
-        try {
-            outputStream.close()
-        } catch (e: IOException) {
-            Log.e("MediaConverterEngineBuffer", "Failed to close output stream: ${e.message}")
-        }
-
+        outputStream.close()
         decoder.stop()
         decoder.release()
         encoder.stop()

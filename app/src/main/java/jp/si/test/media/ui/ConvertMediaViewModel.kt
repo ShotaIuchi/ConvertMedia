@@ -107,7 +107,11 @@ class ConvertMediaViewModel : ViewModel() {
     fun initialize(cwd: File) {
         val fCwd = File(cwd, "")
         this.srcFiles = fCwd.listFiles { _, name -> name.endsWith(".mp4") }?.toList() ?: listOf()
-        this.outDirectory = File(cwd, "out")
+        this.outDirectory = File(cwd, "out").apply {
+            if (!exists()) {
+                mkdir()
+            }
+        }
     }
 
     suspend fun clear() = mutex.withLock {
@@ -215,6 +219,7 @@ class ConvertMediaViewModel : ViewModel() {
             } catch (e: Exception) {
                 it.errorMessage = e.toString()
                 addErrorMessage(it)
+                e.printStackTrace()
             } finally {
                 removeActiveMassage(it)
                 updateCounts(it)
